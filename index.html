@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>WN Money Tracker</title>
+  <title>WN Money Tracker | Cloud Bookkeeping</title>
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -17,122 +17,114 @@
               50: '#eef2ff',
               500: '#6366f1',
               600: '#4f46e5',
-              700: '#4338ca'
+              700: '#4338ca',
             }
+          },
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
           }
         }
       }
-    };
+    }
   </script>
   
-  <!-- FontAwesome Icons -->
+  <!-- FontAwesome 6 Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
-  <!-- Mozilla PDF.js for Client-Side Receipt Text Extraction -->
+  
+  <!-- Mozilla PDF.js (Local Client-Side PDF Text Extraction) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
     if (window.pdfjsLib) {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     }
   </script>
 
   <style>
     * { -webkit-tap-highlight-color: transparent; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #020617; color: #f8fafc; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #030712; color: #f8fafc; }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #0f172a; }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    ::-webkit-scrollbar-track { background: #090d16; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #334155; }
+    @media (max-width: 639px) {
+      .mobile-sheet {
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+        border-top-left-radius: 1.25rem;
+        border-top-right-radius: 1.25rem;
+        max-height: 94vh;
+      }
+    }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen antialiased flex flex-col justify-between selection:bg-indigo-600 selection:text-white">
+<body class="bg-[#030712] text-slate-100 min-h-screen antialiased flex flex-col justify-between selection:bg-indigo-600 selection:text-white">
 
-  <!-- ================= 1. PASSCODE LOCK SCREEN (888888) ================= -->
-  <div id="authOverlay" class="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center p-4">
-    <div class="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-8 text-center relative overflow-hidden">
-      
-      <!-- Top Decorative Glow -->
-      <div class="absolute -top-12 -right-12 w-36 h-36 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
-
-      <!-- Icon -->
-      <div class="w-14 h-14 bg-gradient-to-tr from-indigo-600 to-indigo-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-600/30 text-white font-black text-xl">
+  <!-- ================= MASTER PASSCODE LOCK SCREEN (888888) ================= -->
+  <div id="authOverlay" class="fixed inset-0 z-50 bg-[#030712] flex items-center justify-center p-4">
+    <div class="w-full max-w-sm bg-[#0b0f19] border border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-8 text-center relative overflow-hidden">
+      <div class="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-600/30 text-white text-xl font-bold">
         WN
       </div>
+      <h1 class="text-xl font-extrabold tracking-tight text-white mb-1">WN Money Tracker</h1>
+      <p class="text-xs text-slate-400 mb-6">Enter master passcode to unlock personal cloud ledger.</p>
 
-      <h1 class="text-xl sm:text-2xl font-black tracking-tight text-white mb-1">WN Money Tracker</h1>
-      <p class="text-xs text-slate-400 mb-6">Enter master passcode to unlock your ledger</p>
+      <div class="space-y-4">
+        <input type="password" id="passcodeInput" maxlength="12" placeholder="Passcode (888888)"
+          class="w-full text-center tracking-widest text-lg font-mono font-bold bg-[#030712] border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder:tracking-normal placeholder:font-sans placeholder:text-xs placeholder:text-slate-600"
+          onkeydown="if(event.key === 'Enter') handleUnlock()">
 
-      <!-- Input Field -->
-      <div class="space-y-4 text-left">
-        <div>
-          <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Passcode</label>
-          <div class="relative">
-            <i class="fas fa-lock absolute left-3.5 top-3.5 text-slate-500 text-sm"></i>
-            <input type="password" id="passcodeInput" placeholder="Enter 6-digit code" maxlength="12"
-              class="w-full pl-10 pr-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 text-sm tracking-widest font-mono font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-              onkeydown="if(event.key === 'Enter') handleUnlock()">
-          </div>
-        </div>
-
-        <button type="button" id="btnUnlock" onclick="handleUnlock()"
-          class="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-bold rounded-xl text-sm transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 cursor-pointer">
+        <button type="button" onclick="handleUnlock()"
+          class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer">
           <i class="fas fa-key text-xs"></i>
           <span>Unlock Tracker</span>
         </button>
       </div>
 
-      <!-- Error Box -->
-      <div id="passcodeError" class="mt-4 text-xs text-rose-300 bg-rose-950/60 border border-rose-800 rounded-xl p-2.5 hidden text-center">
+      <div id="passcodeError" class="mt-4 text-xs text-rose-400 bg-rose-950/40 border border-rose-800/60 rounded-xl p-2.5 hidden">
         Incorrect passcode. Please try again.
-      </div>
-
-      <div class="mt-6 pt-4 border-t border-slate-800 text-[11px] text-slate-500 flex items-center justify-center gap-1.5">
-        <i class="fas fa-cloud text-[10px] text-emerald-400"></i>
-        <span>Multi-device cloud synchronization</span>
       </div>
     </div>
   </div>
 
-  <!-- ================= 2. MAIN APPLICATION INTERFACE ================= -->
+  <!-- ================= MAIN APPLICATION INTERFACE ================= -->
   <div id="appContainer" class="hidden min-h-screen flex flex-col justify-between">
     
-    <!-- Top Navigation -->
-    <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-30">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
+    <!-- Top Navigation Bar -->
+    <header class="border-b border-slate-800/80 bg-[#090d16]/90 backdrop-blur sticky top-0 z-30">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+        
+        <!-- Brand -->
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-600/30 text-white font-black text-sm">
+          <div class="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-md shadow-indigo-600/30">
             WN
           </div>
           <div>
             <div class="flex items-center gap-2">
-              <h1 class="text-sm sm:text-base font-bold text-white tracking-tight">WN Money Tracker</h1>
-              <span id="syncStatusBadge" class="text-[10px] font-bold uppercase tracking-wider bg-emerald-950/80 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-800/60 flex items-center gap-1">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Cloud Synced
+              <h1 class="text-sm sm:text-base font-bold text-white tracking-tight leading-none">WN Money Tracker</h1>
+              <span class="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> CLOUD SYNCED
               </span>
             </div>
-            <p class="text-[11px] text-slate-400 hidden sm:block">Automated Bookkeeping & Cash Flow Intelligence</p>
+            <p class="text-[11px] text-slate-400 hidden sm:block mt-0.5">Automated Bookkeeping & Cash Flow Intelligence</p>
           </div>
         </div>
 
+        <!-- Actions -->
         <div class="flex items-center gap-2 sm:gap-3">
-          <!-- Refresh / Sync Button -->
-          <button onclick="syncFromCloud()" title="Sync with Cloud"
-            class="h-9 w-9 sm:w-auto sm:px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer">
-            <i id="syncIcon" class="fas fa-rotate"></i>
+          <button onclick="fetchCloudData()" id="syncBtn" class="h-9 px-3 bg-[#111726] hover:bg-slate-800 text-slate-300 border border-slate-700/80 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer">
+            <i class="fas fa-rotate" id="syncIcon"></i>
             <span class="hidden sm:inline">Sync</span>
           </button>
 
-          <!-- Add Entry Button -->
           <button onclick="openTransactionModal()" class="h-9 px-3.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md shadow-indigo-600/30 transition cursor-pointer">
             <i class="fas fa-plus"></i>
-            <span class="hidden sm:inline">Add Entry</span>
+            <span>Add Entry</span>
           </button>
 
-          <!-- Lock Button -->
-          <button onclick="handleLock()" title="Lock App"
-            class="h-9 px-2.5 sm:px-3 bg-slate-800 hover:bg-rose-950/60 hover:text-rose-300 hover:border-rose-800 text-slate-400 border border-slate-700 rounded-xl text-xs flex items-center gap-1.5 transition cursor-pointer">
+          <button onclick="lockDashboard()" title="Lock Tracker" class="h-9 px-3 bg-[#111726] hover:bg-rose-950/50 hover:text-rose-300 text-slate-400 border border-slate-700/80 rounded-xl text-xs flex items-center gap-1.5 transition cursor-pointer">
             <i class="fas fa-lock"></i>
             <span class="hidden sm:inline">Lock</span>
           </button>
@@ -141,92 +133,80 @@
     </header>
 
     <!-- Main Content Area -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full space-y-6 flex-grow pb-24 sm:pb-12">
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full space-y-5 flex-grow pb-24 sm:pb-10">
 
-      <!-- Setup Notice (Only visible if Supabase tables haven't been run) -->
-      <div id="sqlSetupAlert" class="hidden bg-amber-950/40 border border-amber-600/60 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-200">
+      <!-- Peak Spending Day Callout -->
+      <div id="peakSpendingBanner" class="hidden bg-[#111726] border border-rose-900/40 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
         <div class="flex items-center gap-3">
-          <i class="fas fa-database text-amber-400 text-lg"></i>
-          <div>
-            <span class="font-bold block text-sm text-white">Database Table Setup Required</span>
-            <span>Your Supabase project needs the <code class="bg-amber-900/50 px-1 py-0.5 rounded text-amber-300 font-mono">transactions</code> table created to sync across devices.</span>
-          </div>
-        </div>
-        <button onclick="copySqlSetup()" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold rounded-lg whitespace-nowrap cursor-pointer">
-          <i class="fas fa-copy mr-1"></i> Copy SQL Query
-        </button>
-      </div>
-
-      <!-- Peak Spending Callout Banner -->
-      <div id="peakSpendingBanner" class="hidden bg-gradient-to-r from-rose-950/40 via-amber-950/20 to-slate-900 border border-rose-900/50 p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-rose-600/80 text-white flex items-center justify-center flex-shrink-0 shadow-sm border border-rose-500/40">
+          <div class="w-9 h-9 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center flex-shrink-0">
             <i class="fas fa-chart-line text-sm"></i>
           </div>
           <div>
-            <h3 class="text-xs font-bold uppercase tracking-wider text-rose-400">Peak Spending Day</h3>
-            <p id="peakSpendingText" class="text-xs sm:text-sm text-slate-300 font-normal mt-0.5">Analyzing your expense trends...</p>
+            <h3 class="text-[11px] font-bold uppercase tracking-wider text-rose-400">PEAK SPENDING DAY</h3>
+            <p id="peakSpendingText" class="text-xs sm:text-sm text-slate-300 mt-0.5">Calculating peak expense timeline...</p>
           </div>
         </div>
-        <span id="peakPeriodBadge" class="self-end sm:self-center px-3 py-1 bg-slate-800 text-rose-300 font-bold text-xs rounded-lg border border-rose-800/60">
-          Peak
-        </span>
+        <div class="self-end sm:self-center">
+          <span id="peakPeriodBadge" class="px-3 py-1 bg-slate-800/80 text-rose-300 font-bold text-xs rounded-lg border border-rose-800/60">
+            Peak: $0.00
+          </span>
+        </div>
       </div>
 
-      <!-- Financial KPI Cards -->
-      <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
-        <!-- Income -->
-        <div class="bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-800/90 shadow-sm">
+      <!-- 4 Metric KPI Cards -->
+      <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <!-- Total Income -->
+        <div class="bg-[#0b0f19] border border-slate-800/90 rounded-2xl p-4 sm:p-5 shadow-sm">
           <div class="flex items-center justify-between text-slate-400">
-            <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider">Total Income</span>
-            <span class="w-7 h-7 rounded-lg bg-emerald-950 text-emerald-400 border border-emerald-800/60 flex items-center justify-center text-xs">
+            <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider">TOTAL INCOME</span>
+            <div class="w-7 h-7 rounded-lg bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 flex items-center justify-center text-xs">
               <i class="fas fa-arrow-down"></i>
-            </span>
+            </div>
           </div>
-          <div class="mt-2 sm:mt-3">
-            <h4 id="metricIncome" class="text-lg sm:text-2xl font-black text-emerald-400 truncate">$0.00</h4>
-            <p id="metricIncomeCount" class="text-[11px] text-emerald-400/80 font-semibold mt-0.5 truncate">0 entries</p>
+          <div class="mt-3">
+            <div id="metricIncome" class="text-xl sm:text-2xl font-bold text-emerald-400 truncate">$0.00</div>
+            <p id="metricIncomeCount" class="text-[11px] text-emerald-400/80 font-medium mt-0.5 truncate">0 deposits</p>
           </div>
         </div>
 
-        <!-- Expenses -->
-        <div class="bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-800/90 shadow-sm">
+        <!-- Total Expenses -->
+        <div class="bg-[#0b0f19] border border-slate-800/90 rounded-2xl p-4 sm:p-5 shadow-sm">
           <div class="flex items-center justify-between text-slate-400">
-            <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider">Total Expenses</span>
-            <span class="w-7 h-7 rounded-lg bg-rose-950 text-rose-400 border border-rose-800/60 flex items-center justify-center text-xs">
+            <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider">TOTAL EXPENSES</span>
+            <div class="w-7 h-7 rounded-lg bg-rose-950/80 text-rose-400 border border-rose-800/60 flex items-center justify-center text-xs">
               <i class="fas fa-arrow-up"></i>
-            </span>
+            </div>
           </div>
-          <div class="mt-2 sm:mt-3">
-            <h4 id="metricExpense" class="text-lg sm:text-2xl font-black text-rose-400 truncate">$0.00</h4>
-            <p id="metricExpenseCount" class="text-[11px] text-rose-400/80 font-semibold mt-0.5 truncate">0 entries</p>
+          <div class="mt-3">
+            <div id="metricExpense" class="text-xl sm:text-2xl font-bold text-rose-400 truncate">$0.00</div>
+            <p id="metricExpenseCount" class="text-[11px] text-rose-400/80 font-medium mt-0.5 truncate">0 payments</p>
           </div>
         </div>
 
-        <!-- Net Profit -->
-        <div class="bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-800/90 shadow-sm">
+        <!-- Net Balance -->
+        <div class="bg-[#0b0f19] border border-slate-800/90 rounded-2xl p-4 sm:p-5 shadow-sm">
           <div class="flex items-center justify-between text-slate-400">
-            <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider">Net Balance</span>
-            <span class="w-7 h-7 rounded-lg bg-indigo-950 text-indigo-400 border border-indigo-800/60 flex items-center justify-center text-xs">
+            <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider">NET BALANCE</span>
+            <div class="w-7 h-7 rounded-lg bg-indigo-950/80 text-indigo-400 border border-indigo-800/60 flex items-center justify-center text-xs">
               <i class="fas fa-wallet"></i>
-            </span>
+            </div>
           </div>
-          <div class="mt-2 sm:mt-3">
-            <h4 id="metricNet" class="text-lg sm:text-2xl font-black text-white truncate">$0.00</h4>
-            <p id="metricNetStatus" class="text-[11px] text-slate-400 font-semibold mt-0.5 truncate">Balanced</p>
+          <div class="mt-3">
+            <div id="metricNet" class="text-xl sm:text-2xl font-bold text-white truncate">$0.00</div>
+            <p id="metricNetStatus" class="text-[11px] text-slate-400 font-medium mt-0.5 truncate">Balanced</p>
           </div>
         </div>
 
-        <!-- Margin -->
-        <div class="bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-800/90 shadow-sm">
+        <!-- Savings Margin -->
+        <div class="bg-[#0b0f19] border border-slate-800/90 rounded-2xl p-4 sm:p-5 shadow-sm">
           <div class="flex items-center justify-between text-slate-400">
-            <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider">Savings Margin</span>
-            <span class="w-7 h-7 rounded-lg bg-sky-950 text-sky-400 border border-sky-800/60 flex items-center justify-center text-xs">
+            <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider">SAVINGS MARGIN</span>
+            <div class="w-7 h-7 rounded-lg bg-sky-950/80 text-sky-400 border border-sky-800/60 flex items-center justify-center text-xs">
               <i class="fas fa-percent"></i>
-            </span>
+            </div>
           </div>
-          <div class="mt-2 sm:mt-3">
-            <h4 id="metricMargin" class="text-lg sm:text-2xl font-black text-white truncate">0%</h4>
+          <div class="mt-3">
+            <div id="metricMargin" class="text-xl sm:text-2xl font-bold text-white truncate">0%</div>
             <div class="w-full bg-slate-800 rounded-full h-1.5 mt-2 overflow-hidden">
               <div id="metricMarginBar" class="bg-indigo-500 h-1.5 rounded-full transition-all duration-300" style="width: 0%"></div>
             </div>
@@ -236,12 +216,12 @@
 
       <!-- Charts Section -->
       <section class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <!-- Line Chart: Cash Flow Trends -->
-        <div class="lg:col-span-2 bg-slate-900 rounded-2xl p-4 sm:p-6 border border-slate-800/90 shadow-sm flex flex-col justify-between">
+        <!-- Daily Spending Line Chart -->
+        <div class="lg:col-span-2 bg-[#0b0f19] border border-slate-800/90 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col justify-between">
           <div class="flex items-center justify-between mb-3">
             <div>
-              <h3 class="text-sm sm:text-base font-bold text-white">Daily Spending & Cash Flow</h3>
-              <p class="text-xs text-slate-400">Timeline of expenses vs. income</p>
+              <h3 class="text-sm font-bold text-white">Daily Spending & Cash Flow</h3>
+              <p class="text-[11px] text-slate-400">Timeline of expenses vs. income</p>
             </div>
             <div class="flex items-center gap-3 text-xs font-medium">
               <span class="flex items-center gap-1.5 text-slate-300"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Expense</span>
@@ -253,26 +233,26 @@
           </div>
         </div>
 
-        <!-- Doughnut Chart: Expenses by Category -->
-        <div class="bg-slate-900 rounded-2xl p-4 sm:p-6 border border-slate-800/90 shadow-sm flex flex-col justify-between">
+        <!-- Doughnut Chart -->
+        <div class="bg-[#0b0f19] border border-slate-800/90 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col justify-between">
           <div class="flex items-center justify-between mb-3">
             <div>
-              <h3 class="text-sm sm:text-base font-bold text-white">Expenses by Category</h3>
-              <p class="text-xs text-slate-400">Breakdown of outflows</p>
+              <h3 class="text-sm font-bold text-white">Expenses by Category</h3>
+              <p class="text-[11px] text-slate-400">Breakdown of outflows</p>
             </div>
-            <i class="fas fa-chart-pie text-slate-500 text-sm"></i>
+            <i class="fas fa-chart-pie text-slate-500 text-xs"></i>
           </div>
-          <div class="relative w-full h-44 sm:h-48 flex items-center justify-center">
+          <div class="relative w-full h-44 sm:h-52 flex items-center justify-center">
             <canvas id="categoryChart"></canvas>
           </div>
-          <div id="categoryLegend" class="mt-3 pt-3 border-t border-slate-800 max-h-32 overflow-y-auto space-y-1.5 text-xs"></div>
+          <div id="categoryLegend" class="mt-3 pt-3 border-t border-slate-800 max-h-28 overflow-y-auto space-y-1.5 text-xs"></div>
         </div>
       </section>
 
-      <!-- Ledger Section -->
-      <section class="bg-slate-900 rounded-2xl border border-slate-800/90 shadow-sm overflow-hidden">
+      <!-- Transaction Ledger Section -->
+      <section class="bg-[#0b0f19] border border-slate-800/90 rounded-2xl shadow-sm overflow-hidden">
         
-        <!-- Filters Toolbar -->
+        <!-- Header & Toolbar -->
         <div class="p-4 sm:p-5 border-b border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
             <h3 class="text-sm sm:text-base font-bold text-white">Transaction Ledger</h3>
@@ -280,67 +260,64 @@
           </div>
 
           <div class="flex flex-wrap items-center gap-2">
-            <!-- Search -->
+            <!-- Search Input -->
             <div class="relative flex-grow sm:flex-grow-0 w-full sm:w-48">
               <i class="fas fa-search absolute left-3 top-2.5 text-xs text-slate-500"></i>
-              <input type="text" id="ledgerSearchInput" oninput="renderDashboard()" placeholder="Search description..." 
-                class="w-full text-xs pl-8 pr-3 py-2 bg-slate-800 border border-slate-700 text-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none placeholder-slate-500">
+              <input type="text" id="ledgerSearchInput" oninput="renderLedger()" placeholder="Search description..."
+                class="w-full text-xs pl-8 pr-3 py-2 bg-[#030712] border border-slate-700/80 text-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none placeholder-slate-500">
             </div>
 
             <!-- Time Filter -->
-            <select id="timeFilter" onchange="renderDashboard()" class="text-xs bg-slate-800 border border-slate-700 text-slate-200 rounded-xl py-2 px-3 focus:outline-none cursor-pointer">
-              <option value="this_month" selected>This Month</option>
-              <option value="prev_month">Previous Month</option>
-              <option value="all">All Records</option>
-            </select>
+            <div class="relative">
+              <select id="timeFilter" onchange="renderDashboard()" class="text-xs bg-[#030712] border border-slate-700/80 text-slate-200 rounded-xl py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none cursor-pointer">
+                <option value="this_month" selected>This Month</option>
+                <option value="prev_month">Previous Month</option>
+                <option value="all">All Time</option>
+              </select>
+            </div>
 
-            <!-- Manage Categories Button -->
-            <button onclick="openCategoryModal()" class="h-8 sm:h-9 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl flex items-center gap-1.5 border border-slate-700 transition cursor-pointer">
+            <!-- Categories Button -->
+            <button onclick="openCategoryModal()" class="h-8 sm:h-9 px-3 bg-[#111726] hover:bg-slate-800 text-slate-200 text-xs font-semibold rounded-xl flex items-center gap-1.5 border border-slate-700/80 cursor-pointer">
               <i class="fas fa-tags text-indigo-400"></i>
               <span>Categories</span>
             </button>
 
-            <!-- Export to CSV -->
-            <button onclick="exportToCSV()" class="h-8 sm:h-9 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl flex items-center gap-1.5 border border-slate-700 transition cursor-pointer">
+            <!-- Export Button -->
+            <button onclick="exportToCSV()" class="h-8 sm:h-9 px-3 bg-[#111726] hover:bg-slate-800 text-slate-200 text-xs font-semibold rounded-xl flex items-center gap-1.5 border border-slate-700/80 cursor-pointer">
               <i class="fas fa-file-csv text-emerald-400"></i>
-              <span class="hidden sm:inline">Export</span>
+              <span>Export</span>
             </button>
           </div>
         </div>
 
-        <!-- 1. Mobile Cards View (< 768px) -->
-        <div id="mobileLedgerList" class="block md:hidden divide-y divide-slate-800 p-2"></div>
-
-        <!-- 2. Desktop Table (>= 768px) -->
-        <div class="hidden md:block overflow-x-auto">
+        <!-- Table View (Desktop & Tablet) -->
+        <div class="overflow-x-auto">
           <table class="w-full text-left text-xs text-slate-300">
-            <thead class="bg-slate-800/50 text-slate-400 uppercase font-semibold text-[11px] border-b border-slate-800">
+            <thead class="bg-[#090d16] text-slate-400 uppercase font-bold text-[10px] tracking-wider border-b border-slate-800">
               <tr>
-                <th class="px-5 py-3.5">Date</th>
-                <th class="px-5 py-3.5">Description</th>
-                <th class="px-5 py-3.5">Category</th>
-                <th class="px-5 py-3.5 text-right">Amount</th>
-                <th class="px-5 py-3.5 text-center">Receipt</th>
-                <th class="px-5 py-3.5 text-center">Action</th>
+                <th class="px-5 py-3">DATE</th>
+                <th class="px-5 py-3">DESCRIPTION</th>
+                <th class="px-5 py-3">CATEGORY</th>
+                <th class="px-5 py-3 text-right">AMOUNT</th>
+                <th class="px-5 py-3 text-center">RECEIPT</th>
+                <th class="px-5 py-3 text-center">ACTION</th>
               </tr>
             </thead>
-            <tbody id="desktopLedgerBody" class="divide-y divide-slate-800"></tbody>
+            <tbody id="desktopLedgerBody" class="divide-y divide-slate-800/80"></tbody>
           </table>
         </div>
 
         <!-- Empty State -->
-        <div id="emptyLedgerView" class="hidden py-14 flex-col items-center justify-center text-center px-4">
-          <div class="w-12 h-12 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-500 mb-3">
-            <i class="fas fa-receipt text-xl"></i>
+        <div id="emptyLedgerView" class="hidden py-12 flex-col items-center justify-center text-center px-4">
+          <div class="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-500 mb-2">
+            <i class="fas fa-receipt"></i>
           </div>
-          <h4 class="text-sm font-bold text-slate-300">No Transactions Found</h4>
-          <p class="text-xs text-slate-500 mt-1 max-w-xs">No entries match your search or filter.</p>
-          <button onclick="openTransactionModal()" class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-500 cursor-pointer">
-            Add New Entry
-          </button>
+          <p class="text-xs font-bold text-slate-300">No transactions recorded</p>
+          <p class="text-[11px] text-slate-500 mt-0.5">Click "+ Add Entry" to record your first transaction.</p>
         </div>
 
-        <div class="px-5 py-3 bg-slate-800/30 border-t border-slate-800 text-xs text-slate-400 flex items-center justify-between">
+        <!-- Table Footer -->
+        <div class="px-5 py-3 bg-[#090d16] border-t border-slate-800 text-xs text-slate-400 flex items-center justify-between">
           <span id="ledgerCountIndicator">Showing 0 records</span>
           <span class="text-[11px] text-slate-500 flex items-center gap-1.5">
             <i class="fas fa-cloud text-emerald-400"></i> Supabase Cloud Sync
@@ -350,207 +327,181 @@
 
     </main>
 
-    <!-- Mobile Bottom Navigation Bar -->
-    <div class="fixed bottom-0 inset-x-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 py-2 px-6 flex sm:hidden items-center justify-around z-40">
-      <button onclick="openCategoryModal()" class="flex flex-col items-center justify-center text-slate-400 hover:text-indigo-400 py-1 min-w-[50px] min-h-[44px]">
-        <i class="fas fa-tags text-base"></i>
-        <span class="text-[10px] font-medium mt-0.5">Categories</span>
-      </button>
-
-      <button onclick="openTransactionModal()" class="w-12 h-12 -mt-5 bg-gradient-to-tr from-indigo-600 to-indigo-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-indigo-600/50 active:scale-95 transition-transform min-w-[48px] min-h-[48px]">
-        <i class="fas fa-plus text-base"></i>
-      </button>
-
-      <button onclick="syncFromCloud()" class="flex flex-col items-center justify-center text-slate-400 hover:text-indigo-400 py-1 min-w-[50px] min-h-[44px]">
-        <i class="fas fa-rotate text-base"></i>
-        <span class="text-[10px] font-medium mt-0.5">Sync</span>
-      </button>
-    </div>
-
-    <!-- Footer Desktop -->
-    <footer class="border-t border-slate-800 py-4 text-center text-xs text-slate-600 hidden sm:block">
+    <!-- Footer -->
+    <footer class="border-t border-slate-800/80 py-4 text-center text-[11px] text-slate-600">
       WN Money Tracker &bull; Secured with master passcode &bull; Cloud sync via Supabase
     </footer>
   </div>
 
-  <!-- ================= 3. TRANSACTION ENTRY MODAL WITH PDF RECEIPT AUTO-FILL ================= -->
+  <!-- ================= ADD TRANSACTION MODAL ================= -->
   <div id="txModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
-    <div class="bg-slate-900 border border-slate-800 w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+    <div class="mobile-sheet bg-[#0b0f19] border border-slate-800 w-full sm:max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
       
-      <div class="px-5 py-4 bg-slate-950 text-white flex items-center justify-between border-b border-slate-800 flex-shrink-0">
+      <!-- Modal Header -->
+      <div class="px-5 py-3.5 bg-[#090d16] text-white flex items-center justify-between border-b border-slate-800">
         <div class="flex items-center gap-2">
-          <span class="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-xs">
-            <i class="fas fa-file-invoice-dollar"></i>
+          <span class="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-xs">
+            <i class="fas fa-plus"></i>
           </span>
-          <h3 class="text-sm sm:text-base font-bold">New Transaction</h3>
+          <h3 class="text-sm font-bold">New Ledger Entry</h3>
         </div>
-        <button onclick="closeTransactionModal()" class="w-8 h-8 rounded-lg text-slate-400 hover:text-white flex items-center justify-center text-sm cursor-pointer">
+        <button onclick="closeTransactionModal()" class="w-7 h-7 rounded-lg text-slate-400 hover:text-white flex items-center justify-center text-xs cursor-pointer">
           <i class="fas fa-times"></i>
         </button>
       </div>
 
-      <div class="p-5 overflow-y-auto space-y-4 flex-grow text-slate-200">
-
-        <!-- ================= PDF & RECEIPT AUTO-FILL DROPZONE ================= -->
-        <div class="bg-slate-950/90 border border-dashed border-indigo-500/40 hover:border-indigo-500 rounded-2xl p-3.5 transition-colors text-center relative group">
-          <input type="file" id="receiptFileInput" accept=".pdf,image/*" onchange="handleReceiptFileUpload(event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+      <!-- Modal Body -->
+      <div class="p-5 overflow-y-auto space-y-4 text-slate-200">
+        
+        <!-- SMART PDF RECEIPT UPLOADER -->
+        <div class="bg-[#030712] border-2 border-dashed border-indigo-500/40 hover:border-indigo-400 rounded-xl p-3.5 text-center transition relative cursor-pointer"
+             onclick="document.getElementById('receiptFileInput').click()"
+             ondragover="event.preventDefault(); this.classList.add('border-indigo-400', 'bg-indigo-950/20')"
+             ondragleave="this.classList.remove('border-indigo-400', 'bg-indigo-950/20')"
+             ondrop="handleReceiptDrop(event)">
           
-          <div id="receiptUploadPrompt" class="space-y-1.5 pointer-events-none">
-            <div class="w-9 h-9 rounded-xl bg-indigo-950 text-indigo-400 border border-indigo-800/60 flex items-center justify-center mx-auto text-sm group-hover:scale-110 transition-transform">
-              <i class="fas fa-wand-magic-sparkles"></i>
+          <input type="file" id="receiptFileInput" accept=".pdf,image/*" class="hidden" onchange="handleReceiptFile(this.files[0])">
+          
+          <div class="flex items-center justify-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center flex-shrink-0">
+              <i class="fas fa-file-pdf text-base"></i>
             </div>
-            <div>
-              <p class="text-xs font-bold text-slate-200">Upload PDF Receipt to Auto-Fill</p>
-              <p class="text-[11px] text-slate-400">Drag & drop or tap to select PDF / Image (Grabs Amount, Date & Merchant)</p>
+            <div class="text-left">
+              <h4 class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                <span>Upload PDF / Receipt to Auto-Fill</span>
+                <span class="text-[9px] px-1.5 py-0.2 bg-indigo-600 text-white font-extrabold rounded">SMART AUTO</span>
+              </h4>
+              <p class="text-[11px] text-slate-400">Click or drag PDF receipt (Trip.com, Grab, flights, bills) to extract details</p>
             </div>
           </div>
 
-          <!-- Analysis Spinner -->
-          <div id="receiptAnalyzingState" class="hidden py-2 space-y-1 text-center">
-            <i class="fas fa-spinner fa-spin text-indigo-400 text-lg"></i>
-            <p class="text-xs font-semibold text-slate-300">Reading PDF & extracting invoice data...</p>
+          <!-- Status Indicator -->
+          <div id="pdfParsingSpinner" class="hidden mt-2.5 text-xs text-indigo-400 font-semibold flex items-center justify-center gap-2">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span>Scanning receipt text & extracting financial details...</span>
           </div>
 
-          <!-- Successful Auto-fill Pill -->
-          <div id="receiptSuccessState" class="hidden p-2 rounded-xl bg-emerald-950/60 border border-emerald-800 text-emerald-300 text-[11px] flex items-center justify-between gap-2 text-left">
-            <div class="flex items-center gap-2 min-w-0">
-              <i class="fas fa-circle-check text-emerald-400 flex-shrink-0"></i>
-              <span id="receiptSuccessInfo" class="truncate font-semibold">Auto-filled from PDF</span>
-            </div>
-            <button type="button" onclick="clearUploadedReceipt(event)" class="z-20 text-slate-400 hover:text-rose-400 px-1 text-xs cursor-pointer" title="Remove receipt">
-              <i class="fas fa-times"></i>
-            </button>
+          <div id="pdfSuccessNotice" class="hidden mt-2.5 text-xs text-emerald-400 font-semibold flex items-center justify-center gap-1.5">
+            <i class="fas fa-check-circle"></i>
+            <span id="pdfSuccessText">Receipt parsed successfully!</span>
+          </div>
+
+          <div id="pdfWarningNotice" class="hidden mt-2 text-xs text-amber-400 bg-amber-950/40 border border-amber-800/60 rounded-lg p-2 text-left"></div>
+
+          <!-- Quick-Pick Amounts Chips (Displayed if multiple totals are found) -->
+          <div id="detectedAmountsContainer" class="hidden mt-3 pt-2 border-t border-slate-800 text-left">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Detected amounts (Click to select):</span>
+            <div id="detectedAmountsChips" class="flex flex-wrap gap-1.5"></div>
           </div>
         </div>
 
-        <!-- Type Selector -->
-        <div>
-          <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Transaction Type</label>
-          <div class="grid grid-cols-2 gap-2 p-1 bg-slate-950 rounded-xl border border-slate-800">
-            <label class="cursor-pointer">
-              <input type="radio" name="entryType" value="expense" class="peer sr-only" checked onchange="filterCategoryDropdownByType()">
-              <div class="text-center py-2.5 rounded-lg font-bold text-xs text-slate-400 peer-checked:bg-slate-800 peer-checked:text-rose-400 peer-checked:border peer-checked:border-slate-700 transition-all flex items-center justify-center gap-1.5">
-                <i class="fas fa-arrow-up"></i> Expense
-              </div>
-            </label>
-            <label class="cursor-pointer">
-              <input type="radio" name="entryType" value="income" class="peer sr-only" onchange="filterCategoryDropdownByType()">
-              <div class="text-center py-2.5 rounded-lg font-bold text-xs text-slate-400 peer-checked:bg-slate-800 peer-checked:text-emerald-400 peer-checked:border peer-checked:border-slate-700 transition-all flex items-center justify-center gap-1.5">
-                <i class="fas fa-arrow-down"></i> Income
-              </div>
-            </label>
-          </div>
+        <!-- Expense / Income Pill Selector -->
+        <div class="grid grid-cols-2 gap-2 p-1 bg-[#030712] rounded-xl border border-slate-800">
+          <label class="cursor-pointer">
+            <input type="radio" name="entryType" value="expense" class="peer sr-only" checked onchange="filterCategoryDropdownByType()">
+            <div class="text-center py-2 rounded-lg font-bold text-xs text-slate-400 peer-checked:bg-slate-800 peer-checked:text-rose-400 peer-checked:border peer-checked:border-slate-700 transition-all flex items-center justify-center gap-1.5">
+              <i class="fas fa-arrow-up"></i> Expense
+            </div>
+          </label>
+          <label class="cursor-pointer">
+            <input type="radio" name="entryType" value="income" class="peer sr-only" onchange="filterCategoryDropdownByType()">
+            <div class="text-center py-2 rounded-lg font-bold text-xs text-slate-400 peer-checked:bg-slate-800 peer-checked:text-emerald-400 peer-checked:border peer-checked:border-slate-700 transition-all flex items-center justify-center gap-1.5">
+              <i class="fas fa-arrow-down"></i> Income
+            </div>
+          </label>
         </div>
 
         <!-- Date & Amount -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Date *</label>
-            <input type="date" id="entryDate" required class="w-full text-xs font-semibold px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none min-h-[44px]">
+            <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Date</label>
+            <input type="date" id="entryDate" required class="w-full text-xs font-semibold px-3 py-2 bg-[#030712] border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
           </div>
           <div>
-            <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Amount ($) *</label>
+            <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Amount ($)</label>
             <div class="relative">
-              <span class="absolute left-3.5 top-3 text-slate-500 font-bold text-xs">$</span>
-              <input type="number" id="entryAmount" step="0.01" min="0.01" placeholder="0.00" required class="w-full text-xs font-bold pl-8 pr-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none min-h-[44px]">
+              <span class="absolute left-3.5 top-2.5 text-slate-500 font-bold text-xs">$</span>
+              <input type="number" id="entryAmount" step="0.01" min="0.01" placeholder="0.00" required class="w-full text-xs font-bold pl-8 pr-3 py-2 bg-[#030712] border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
             </div>
           </div>
         </div>
 
         <!-- Category Selector -->
         <div>
-          <div class="flex items-center justify-between mb-1">
-            <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400">Category *</label>
-            <button type="button" onclick="openCategoryModal()" class="text-xs text-indigo-400 font-semibold hover:underline">
-              + Add Category
-            </button>
-          </div>
-          <div class="relative">
-            <select id="entryCategory" required class="w-full text-xs font-semibold px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none pr-8 min-h-[44px] cursor-pointer"></select>
-          </div>
+          <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Category</label>
+          <select id="entryCategory" required class="w-full text-xs font-semibold px-3 py-2 bg-[#030712] border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none cursor-pointer"></select>
         </div>
 
         <!-- Description -->
         <div>
-          <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Description / Merchant *</label>
-          <input type="text" id="entryDescription" placeholder="e.g. Grocery shopping, Software subscription, Salary" required class="w-full text-xs px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none min-h-[44px]">
+          <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Description / Merchant</label>
+          <input type="text" id="entryDescription" placeholder="e.g. Trip.com, Flight to KL, Starbucks, Groceries" required class="w-full text-xs px-3 py-2 bg-[#030712] border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
         </div>
 
-        <!-- Direct Receipt URL Option (Fallback/Manual) -->
+        <!-- Attached Receipt Preview URL -->
         <div>
-          <div class="flex items-center justify-between mb-1">
-            <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              Receipt Audit Link / Data
-            </label>
-            <span class="text-[10px] text-slate-500">(Auto-populated on upload)</span>
-          </div>
+          <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+            Receipt File Attached <span class="text-slate-500 font-normal lowercase">(auto-saved for audit)</span>
+          </label>
           <div class="relative">
-            <i class="fas fa-paperclip absolute left-3 top-3 text-slate-500 text-xs"></i>
-            <input type="text" id="entryReceiptUrl" placeholder="File attached or paste URL" class="w-full text-xs pl-8 pr-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none min-h-[44px]">
+            <i class="fas fa-paperclip absolute left-3.5 top-2.5 text-slate-500 text-xs"></i>
+            <input type="text" id="entryReceiptUrl" placeholder="No file attached" class="w-full text-xs pl-8 pr-3 py-2 bg-[#030712] border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
           </div>
         </div>
 
         <!-- Submit Button -->
-        <div class="pt-2">
-          <button type="button" id="btnSaveTx" onclick="handleSaveTransaction()" 
-            class="w-full bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-bold text-xs sm:text-sm py-3 px-4 rounded-xl shadow-md shadow-indigo-600/30 transition flex items-center justify-center gap-2 min-h-[46px] cursor-pointer">
-            <i class="fas fa-cloud-arrow-up"></i>
-            <span id="btnSaveTxText">Save Transaction</span>
-          </button>
-        </div>
+        <button type="button" id="btnSaveTx" onclick="handleSaveTransaction()" 
+          class="w-full bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-bold text-xs sm:text-sm py-2.5 px-4 rounded-xl shadow-md shadow-indigo-600/30 transition flex items-center justify-center gap-2 cursor-pointer mt-2">
+          <i class="fas fa-cloud-arrow-up"></i>
+          <span id="btnSaveTxText">Save to Cloud</span>
+        </button>
       </div>
     </div>
   </div>
 
-  <!-- ================= 4. CATEGORY MANAGER MODAL ================= -->
+  <!-- ================= CATEGORY MANAGER MODAL ================= -->
   <div id="catModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
-    <div class="bg-slate-900 border border-slate-800 w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+    <div class="mobile-sheet bg-[#0b0f19] border border-slate-800 w-full sm:max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
       
-      <div class="px-5 py-4 bg-slate-950 text-white flex items-center justify-between border-b border-slate-800 flex-shrink-0">
+      <div class="px-5 py-3.5 bg-[#090d16] text-white flex items-center justify-between border-b border-slate-800">
         <div class="flex items-center gap-2">
-          <span class="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-xs">
+          <span class="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-xs">
             <i class="fas fa-tags"></i>
           </span>
-          <h3 class="text-sm sm:text-base font-bold">Manage Categories</h3>
+          <h3 class="text-sm font-bold">Manage Categories</h3>
         </div>
-        <button onclick="closeCategoryModal()" class="w-8 h-8 rounded-lg text-slate-400 hover:text-white flex items-center justify-center text-sm cursor-pointer">
+        <button onclick="closeCategoryModal()" class="w-7 h-7 rounded-lg text-slate-400 hover:text-white flex items-center justify-center text-xs cursor-pointer">
           <i class="fas fa-times"></i>
         </button>
       </div>
 
       <div class="p-5 overflow-y-auto space-y-4">
-        <!-- Add New -->
-        <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl space-y-3">
-          <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Add New Category</h4>
+        <!-- New Category Box -->
+        <div class="bg-[#030712] border border-slate-800 p-3 rounded-xl space-y-2.5">
+          <h4 class="text-xs font-bold text-slate-300">Add New Category</h4>
           <div class="grid grid-cols-3 gap-2">
-            <input type="text" id="newCatName" placeholder="Category name" class="col-span-2 text-xs px-3 py-2 bg-slate-800 border border-slate-700 text-white rounded-lg focus:outline-none min-h-[40px]">
-            <select id="newCatType" class="text-xs px-2 py-2 bg-slate-800 border border-slate-700 text-slate-200 rounded-lg focus:outline-none min-h-[40px]">
+            <input type="text" id="newCatName" placeholder="Category name" class="col-span-2 text-xs px-3 py-1.5 bg-[#0b0f19] border border-slate-700 text-white rounded-lg focus:outline-none">
+            <select id="newCatType" class="text-xs px-2 py-1.5 bg-[#0b0f19] border border-slate-700 text-slate-200 rounded-lg focus:outline-none">
               <option value="expense">Expense</option>
               <option value="income">Income</option>
             </select>
           </div>
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
-              <label class="text-[11px] font-semibold text-slate-400">Color:</label>
-              <input type="color" id="newCatColor" value="#6366f1" class="w-8 h-8 rounded-lg border border-slate-700 bg-slate-800 p-0.5 cursor-pointer">
+              <label class="text-[11px] text-slate-400">Color:</label>
+              <input type="color" id="newCatColor" value="#6366f1" class="w-7 h-7 rounded border border-slate-700 bg-slate-800 p-0.5 cursor-pointer">
             </div>
-            <button type="button" onclick="handleAddCategory()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-2 rounded-lg transition min-h-[40px] flex items-center gap-1.5 cursor-pointer">
-              <i class="fas fa-plus"></i> Add Category
+            <button type="button" onclick="handleAddCategory()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition cursor-pointer">
+              Add Category
             </button>
           </div>
         </div>
 
-        <!-- List -->
+        <!-- Category Items List -->
         <div>
-          <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Active Categories</h4>
-          <div id="categoryItemsContainer" class="space-y-2 max-h-56 overflow-y-auto pr-1"></div>
+          <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Existing Categories</h4>
+          <div id="categoryItemsContainer" class="space-y-1.5 max-h-52 overflow-y-auto pr-1"></div>
         </div>
-      </div>
-
-      <div class="px-5 py-3 bg-slate-950 border-t border-slate-800 text-right flex-shrink-0">
-        <button onclick="closeCategoryModal()" class="w-full sm:w-auto px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl min-h-[40px] border border-slate-700 cursor-pointer">
-          Done
-        </button>
       </div>
     </div>
   </div>
@@ -561,23 +512,14 @@
     <span id="toastMessage">Notification</span>
   </div>
 
-  <!-- ================= 5. CORE LOGIC (PASSCODE, PDF PARSING & SUPABASE REST) ================= -->
+  <!-- ================= JAVASCRIPT APPLICATION CORE ================= -->
   <script>
-    // Master Access Passcode
+    // --- 1. SUPABASE REST ENDPOINT & MASTER PASSCODE CONFIG ---
+    const SUPABASE_URL = "https://yqknrymyggfzztcrnmiu.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlxa25yeW15Z2dmenp0Y3JubWl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0Njk5MjQsImV4cCI6MjEwNzA0NTkyNH0.bi10_LrEwnnyNJUCWh7R6oj9rOzmksdaD1cYBQpzdXI";
     const MASTER_PASSCODE = "888888";
 
-    // Supabase Configuration
-    const SUPABASE_BASE = "https://yqknrymyggfzztcrnmiu.supabase.co/rest/v1";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlxa25yeW15Z2dmenp0Y3JubWl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0Njk5MjQsImV4cCI6MjEwNzA0NTkyNH0.bi10_LrEwnnyNJUCWh7R6oj9rOzmksdaD1cYBQpzdXI";
-
-    const supabaseHeaders = {
-      "apikey": SUPABASE_KEY,
-      "Authorization": `Bearer ${SUPABASE_KEY}`,
-      "Content-Type": "application/json",
-      "Prefer": "return=representation"
-    };
-
-    // State
+    // Application State
     let transactions = [];
     let categories = [];
     let trendChart = null;
@@ -585,12 +527,12 @@
 
     const defaultCategories = [
       { id: 'def-1', name: 'Housing & Rent', type: 'expense', color: '#6366f1' },
-      { id: 'def-2', name: 'Food & Groceries', type: 'expense', color: '#f43f5e' },
-      { id: 'def-3', name: 'Transportation', type: 'expense', color: '#f59e0b' },
-      { id: 'def-4', name: 'Entertainment', type: 'expense', color: '#a855f7' },
-      { id: 'def-5', name: 'Software & Bills', type: 'expense', color: '#0ea5e9' },
+      { id: 'def-2', name: 'Travel & Commute', type: 'expense', color: '#f59e0b' },
+      { id: 'def-3', name: 'Meals & Dining', type: 'expense', color: '#f43f5e' },
+      { id: 'def-4', name: 'Flight & Holidays', type: 'expense', color: '#0ea5e9' },
+      { id: 'def-5', name: 'Tech & Cloud', type: 'expense', color: '#a855f7' },
       { id: 'def-6', name: 'Salary & Earnings', type: 'income', color: '#10b981' },
-      { id: 'def-7', name: 'Investments', type: 'income', color: '#34d399' }
+      { id: 'def-7', name: 'Investments & Returns', type: 'income', color: '#34d399' }
     ];
 
     const currencyFmt = new Intl.NumberFormat('en-US', {
@@ -599,314 +541,364 @@
       minimumFractionDigits: 2
     });
 
-    // --- 1. BULLETPROOF UNLOCK HANDLER ---
-    function handleUnlock() {
-      const input = document.getElementById('passcodeInput');
-      const errBox = document.getElementById('passcodeError');
-      const entered = input ? input.value.trim() : '';
-
-      if (entered === MASTER_PASSCODE) {
-        if (errBox) errBox.classList.add('hidden');
-        localStorage.setItem('wn_tracker_unlocked', 'true');
-        showDashboard();
-      } else {
-        if (errBox) errBox.classList.remove('hidden');
-        if (input) {
-          input.value = '';
-          input.focus();
-        }
-      }
-    }
-
-    function handleLock() {
-      localStorage.removeItem('wn_tracker_unlocked');
-      document.getElementById('appContainer').classList.add('hidden');
-      document.getElementById('authOverlay').classList.remove('hidden');
-      const input = document.getElementById('passcodeInput');
-      if (input) input.value = '';
-    }
-
-    function showDashboard() {
-      document.getElementById('authOverlay').classList.add('hidden');
-      document.getElementById('appContainer').classList.remove('hidden');
-      document.getElementById('entryDate').value = new Date().toISOString().split('T')[0];
-      
-      loadLocalState();
-      syncFromCloud();
-    }
-
-    // Check unlock on page load
+    // --- 2. AUTHENTICATION & INITIALIZATION ---
     window.addEventListener('DOMContentLoaded', () => {
-      if (localStorage.getItem('wn_tracker_unlocked') === 'true') {
-        showDashboard();
+      document.getElementById('entryDate').value = new Date().toISOString().split('T')[0];
+
+      if (sessionStorage.getItem('wn_unlocked') === 'true') {
+        unlockDashboard();
       } else {
         document.getElementById('authOverlay').classList.remove('hidden');
-        document.getElementById('appContainer').classList.add('hidden');
-        const input = document.getElementById('passcodeInput');
-        if (input) input.focus();
+        document.getElementById('passcodeInput').focus();
       }
     });
 
-    // --- 2. SMART PDF RECEIPT PARSING & AUTO-FILL ---
-    async function handleReceiptFileUpload(event) {
-      const file = event.target.files ? event.target.files[0] : null;
-      if (!file) return;
+    function handleUnlock() {
+      const code = document.getElementById('passcodeInput').value.trim();
+      const errEl = document.getElementById('passcodeError');
 
-      const promptBox = document.getElementById('receiptUploadPrompt');
-      const analyzingBox = document.getElementById('receiptAnalyzingState');
-      const successBox = document.getElementById('receiptSuccessState');
-      const successInfo = document.getElementById('receiptSuccessInfo');
-
-      promptBox.classList.add('hidden');
-      successBox.classList.add('hidden');
-      analyzingBox.classList.remove('hidden');
-
-      // Convert file to Base64 / DataURL for audit storage
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const fileDataUrl = e.target.result;
-        document.getElementById('entryReceiptUrl').value = fileDataUrl;
-
-        try {
-          if (file.type === 'application/pdf') {
-            await extractPdfTextAndAutofill(fileDataUrl, file.name);
-          } else {
-            // Image file: Auto-populate description with filename as fallback
-            const cleanName = file.name.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " ");
-            document.getElementById('entryDescription').value = cleanName;
-            showToast("Receipt image attached!", "info");
-          }
-
-          analyzingBox.classList.add('hidden');
-          successBox.classList.remove('hidden');
-          successInfo.textContent = `Attached: ${file.name}`;
-        } catch (err) {
-          console.error("PDF Parse error:", err);
-          analyzingBox.classList.add('hidden');
-          promptBox.classList.remove('hidden');
-          showToast("Could not auto-read text from PDF, but receipt is attached.", "info");
-        }
-      };
-
-      reader.readAsDataURL(file);
+      if (code === MASTER_PASSCODE) {
+        sessionStorage.setItem('wn_unlocked', 'true');
+        errEl.classList.add('hidden');
+        unlockDashboard();
+      } else {
+        errEl.classList.remove('hidden');
+      }
     }
 
-    async function extractPdfTextAndAutofill(dataUrl, fileName) {
-      if (!window.pdfjsLib) {
-        throw new Error("PDF.js library not loaded");
-      }
-
-      const pdf = await pdfjsLib.getDocument({ url: dataUrl }).promise;
-      let fullText = "";
-
-      // Extract text from up to the first 2 pages
-      const maxPages = Math.min(pdf.numPages, 2);
-      for (let i = 1; i <= maxPages; i++) {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items.map(item => item.str).join(" ");
-        fullText += " " + pageText;
-      }
-
-      parseReceiptTextAndPopulateForm(fullText, fileName);
+    function unlockDashboard() {
+      document.getElementById('authOverlay').classList.add('hidden');
+      document.getElementById('appContainer').classList.remove('hidden');
+      fetchCloudData();
     }
 
-    function parseReceiptTextAndPopulateForm(text, fallbackFileName) {
-      const cleanText = text.replace(/\s+/g, ' ').trim();
-      let detectedAmount = null;
-      let detectedDate = null;
-      let detectedMerchant = null;
-
-      // 1. EXTRACT AMOUNT
-      // A. Look for "Total", "Grand Total", "Amount Due", "Amount Paid"
-      const totalPatterns = [
-        /(?:grand\s*total|total\s*amount|total\s*due|amount\s*paid|total|amount)[\s\:\$RM€£MYR]*([0-9]{1,4}(?:[,\.][0-9]{2,3})*(?:\.[0-9]{2}))/i,
-        /(?:USD|MYR|RM|\$|€|£)\s*([0-9]{1,4}(?:[,\.][0-9]{2,3})*(?:\.[0-9]{2}))/i
-      ];
-
-      for (const pat of totalPatterns) {
-        const match = cleanText.match(pat);
-        if (match && match[1]) {
-          const rawAmt = match[1].replace(/,/g, '');
-          const val = parseFloat(rawAmt);
-          if (!isNaN(val) && val > 0 && val < 50000) {
-            detectedAmount = val;
-            break;
-          }
-        }
-      }
-
-      // Fallback: search all monetary values and pick largest realistic total
-      if (!detectedAmount) {
-        const allMoney = [...cleanText.matchAll(/(?:[\$RM€£MYR]\s*|\b)([0-9]{1,5}\.[0-9]{2})\b/g)];
-        if (allMoney.length > 0) {
-          const numbers = allMoney.map(m => parseFloat(m[1])).filter(n => !isNaN(n) && n > 0 && n < 50000);
-          if (numbers.length > 0) {
-            detectedAmount = Math.max(...numbers);
-          }
-        }
-      }
-
-      // 2. EXTRACT DATE
-      // Pattern 1: YYYY-MM-DD
-      const isoMatch = cleanText.match(/\b(202[0-9])[-/.](0[1-9]|1[0-2])[-/.](0[1-9]|[12][0-9]|3[01])\b/);
-      if (isoMatch) {
-        detectedDate = `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
-      }
-
-      // Pattern 2: DD/MM/YYYY or MM/DD/YYYY
-      if (!detectedDate) {
-        const slashMatch = cleanText.match(/\b(0?[1-9]|[12][0-9]|3[01])[-/.](0?[1-9]|1[0-2])[-/.](202[0-9])\b/);
-        if (slashMatch) {
-          const d = String(slashMatch[1]).padStart(2, '0');
-          const m = String(slashMatch[2]).padStart(2, '0');
-          const y = slashMatch[3];
-          detectedDate = `${y}-${m}-${d}`;
-        }
-      }
-
-      // Pattern 3: Words like "15 Oct 2026" or "October 15, 2026"
-      if (!detectedDate) {
-        const wordMatch = cleanText.match(/\b(0?[1-9]|[12][0-9]|3[01])\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\s,]+(202[0-9])\b/i);
-        if (wordMatch) {
-          const parsed = new Date(`${wordMatch[2]} ${wordMatch[1]}, ${wordMatch[3]}`);
-          if (!isNaN(parsed)) {
-            detectedDate = parsed.toISOString().split('T')[0];
-          }
-        }
-      }
-
-      // 3. EXTRACT MERCHANT / DESCRIPTION
-      const knownBrands = [
-        "Grab", "Touch 'n Go", "Starbucks", "McDonald's", "KFC", "Apple", "Google",
-        "AWS", "Amazon", "Shopee", "Lazada", "AirAsia", "Netflix", "Spotify", "Uber",
-        "Shell", "Petronas", "Unifi", "Maxis", "Celcom", "Steam", "Adobe"
-      ];
-
-      for (const brand of knownBrands) {
-        if (new RegExp(`\\b${brand}\\b`, "i").test(cleanText)) {
-          detectedMerchant = brand;
-          break;
-        }
-      }
-
-      if (!detectedMerchant) {
-        // Grab first non-empty header word sequence from text
-        const words = cleanText.split(' ').slice(0, 6).join(' ');
-        if (words && words.length > 3) {
-          detectedMerchant = words.substring(0, 30);
-        } else {
-          detectedMerchant = fallbackFileName.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " ");
-        }
-      }
-
-      // 4. SMART CATEGORY MATCHING
-      let matchedCategory = null;
-      const lowerText = cleanText.toLowerCase();
-
-      if (lowerText.match(/food|mcdonald|starbucks|restaurant|cafe|dinner|lunch|grocery|supermarket|mart|bakery|grabfood/)) {
-        matchedCategory = "Food & Groceries";
-      } else if (lowerText.match(/grab|taxi|uber|flight|airasia|petronas|shell|fuel|petrol|parking|toll|train|commute|transport/)) {
-        matchedCategory = "Transportation";
-      } else if (lowerText.match(/apple|google|aws|software|netflix|spotify|adobe|domain|hosting|github|subscription|cloud/)) {
-        matchedCategory = "Software & Bills";
-      } else if (lowerText.match(/rent|housing|electric|water|telekom|wifi|internet|utility/)) {
-        matchedCategory = "Housing & Rent";
-      } else if (lowerText.match(/cinema|movie|game|steam|entertainment|concert/)) {
-        matchedCategory = "Entertainment";
-      }
-
-      // --- APPLY VALUES TO THE FORM ---
-      if (detectedAmount) {
-        document.getElementById('entryAmount').value = detectedAmount.toFixed(2);
-      }
-      if (detectedDate) {
-        document.getElementById('entryDate').value = detectedDate;
-      }
-      if (detectedMerchant) {
-        document.getElementById('entryDescription').value = detectedMerchant;
-      }
-      if (matchedCategory) {
-        const catSelect = document.getElementById('entryCategory');
-        const exists = Array.from(catSelect.options).some(o => o.value === matchedCategory);
-        if (exists) {
-          catSelect.value = matchedCategory;
-        }
-      }
-
-      showToast(`Auto-filled: $${detectedAmount || '0.00'} • ${detectedMerchant}`, "success");
+    function lockDashboard() {
+      sessionStorage.removeItem('wn_unlocked');
+      window.location.reload();
     }
 
-    function clearUploadedReceipt(event) {
-      if (event) event.stopPropagation();
-      document.getElementById('receiptFileInput').value = '';
-      document.getElementById('entryReceiptUrl').value = '';
-      document.getElementById('receiptUploadPrompt').classList.remove('hidden');
-      document.getElementById('receiptSuccessState').classList.add('hidden');
-      document.getElementById('receiptAnalyzingState').classList.add('hidden');
-    }
-
-    // --- 3. CLOUD DATABASE SYNC (VIA DIRECT REST API) ---
-    async function syncFromCloud() {
+    // --- 3. SUPABASE DIRECT REST DATA FETCHING ---
+    async function fetchCloudData() {
       const syncIcon = document.getElementById('syncIcon');
       if (syncIcon) syncIcon.classList.add('fa-spin');
 
       try {
         // Fetch Categories
-        const catRes = await fetch(`${SUPABASE_BASE}/categories?select=*&order=created_at.asc`, {
-          method: 'GET',
-          headers: supabaseHeaders
+        const catRes = await fetch(`${SUPABASE_URL}/rest/v1/categories?select=*&order=created_at.asc`, {
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+          }
         });
-
-        if (catRes.ok) {
-          const cloudCats = await catRes.json();
-          categories = [...defaultCategories, ...(cloudCats || [])];
-          localStorage.setItem('wn_categories_backup', JSON.stringify(categories));
-        }
+        const catData = await catRes.json();
+        categories = [...defaultCategories, ...(Array.isArray(catData) ? catData : [])];
 
         // Fetch Transactions
-        const txRes = await fetch(`${SUPABASE_BASE}/transactions?select=*&order=date.desc`, {
-          method: 'GET',
-          headers: supabaseHeaders
+        const txRes = await fetch(`${SUPABASE_URL}/rest/v1/transactions?select=*&order=date.desc`, {
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+          }
         });
-
-        if (txRes.ok) {
-          const cloudTxs = await txRes.json();
-          transactions = cloudTxs || [];
-          localStorage.setItem('wn_transactions_backup', JSON.stringify(transactions));
-          document.getElementById('sqlSetupAlert').classList.add('hidden');
-        } else if (txRes.status === 404 || txRes.status === 400) {
-          document.getElementById('sqlSetupAlert').classList.remove('hidden');
-        }
+        const txData = await txRes.json();
+        transactions = Array.isArray(txData) ? txData : [];
 
       } catch (err) {
-        console.warn("Cloud sync offline or network issue, using cached data:", err);
+        console.error("Cloud fetch error:", err);
+        showToast("Error connecting to cloud ledger.", "error");
+        categories = defaultCategories;
+        transactions = [];
       } finally {
-        if (syncIcon) {
-          setTimeout(() => syncIcon.classList.remove('fa-spin'), 400);
-        }
+        if (syncIcon) syncIcon.classList.remove('fa-spin');
         filterCategoryDropdownByType();
         renderCategoryModalItems();
         renderDashboard();
       }
     }
 
-    function loadLocalState() {
-      try {
-        const cachedCats = localStorage.getItem('wn_categories_backup');
-        categories = cachedCats ? JSON.parse(cachedCats) : defaultCategories;
-
-        const cachedTxs = localStorage.getItem('wn_transactions_backup');
-        transactions = cachedTxs ? JSON.parse(cachedTxs) : [];
-      } catch (e) {
-        categories = defaultCategories;
-        transactions = [];
+    // --- 4. ADVANCED RECEIPT PDF PARSER (ROBUST MULTI-PASS ENGINE) ---
+    function handleReceiptDrop(e) {
+      e.preventDefault();
+      e.currentTarget.classList.remove('border-indigo-400', 'bg-indigo-950/20');
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleReceiptFile(e.dataTransfer.files[0]);
       }
-      filterCategoryDropdownByType();
-      renderDashboard();
     }
 
-    // --- 4. SAVE TRANSACTION ---
+    async function handleReceiptFile(file) {
+      if (!file) return;
+
+      const spinner = document.getElementById('pdfParsingSpinner');
+      const successNotice = document.getElementById('pdfSuccessNotice');
+      const warningNotice = document.getElementById('pdfWarningNotice');
+      const successText = document.getElementById('pdfSuccessText');
+      const amountsBox = document.getElementById('detectedAmountsContainer');
+      const chipsBox = document.getElementById('detectedAmountsChips');
+
+      spinner.classList.remove('hidden');
+      successNotice.classList.add('hidden');
+      warningNotice.classList.add('hidden');
+      amountsBox.classList.add('hidden');
+      chipsBox.innerHTML = '';
+
+      // Save file representation to receipt URL field
+      const receiptUrlInput = document.getElementById('entryReceiptUrl');
+      const reader = new FileReader();
+      reader.onload = e => {
+        receiptUrlInput.value = e.target.result;
+      };
+      reader.readAsDataURL(file);
+
+      // If PDF, extract text using PDF.js
+      if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+          const pdf = await loadingTask.promise;
+          
+          let fullText = "";
+          for (let i = 1; i <= Math.min(pdf.numPages, 3); i++) {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            
+            // Build lines preserving layout spacing
+            let lastY = null;
+            let pageText = "";
+            for (const item of textContent.items) {
+              if (lastY !== null && Math.abs(item.transform[5] - lastY) > 5) {
+                pageText += "\n";
+              } else if (pageText.length > 0 && !pageText.endsWith("\n") && !pageText.endsWith(" ")) {
+                pageText += " ";
+              }
+              pageText += item.str;
+              lastY = item.transform[5];
+            }
+            fullText += pageText + "\n";
+          }
+
+          if (fullText.trim().length < 15) {
+            spinner.classList.add('hidden');
+            warningNotice.textContent = "This PDF appears to be a scanned image without readable text. Please review the details manually.";
+            warningNotice.classList.remove('hidden');
+            return;
+          }
+
+          // Execute Smart Text Extraction
+          runSmartInformationExtraction(fullText);
+          spinner.classList.add('hidden');
+          successNotice.classList.remove('hidden');
+
+        } catch (err) {
+          console.error("PDF Parsing error:", err);
+          spinner.classList.add('hidden');
+          warningNotice.textContent = "Could not parse PDF text: " + err.message;
+          warningNotice.classList.remove('hidden');
+        }
+      } else {
+        // Image Receipt
+        spinner.classList.add('hidden');
+        successText.textContent = "Receipt image attached! Please enter amount & merchant.";
+        successNotice.classList.remove('hidden');
+      }
+    }
+
+    function runSmartInformationExtraction(text) {
+      console.log("Raw Receipt Text:\n", text);
+
+      // Cleaned Lines
+      const rawLines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+      // -------------------------------------------------------------
+      // 1. EXTRACT AMOUNT / PRICE (Multi-Pass Engine)
+      // -------------------------------------------------------------
+      let detectedAmounts = [];
+      let primaryAmount = null;
+
+      // Regular expressions for currencies: RM, MYR, $, USD, SGD, EUR, GBP, or bare decimals
+      const currencyPattern = /(?:(?:RM|MYR|\$|USD|SGD|EUR|GBP)\s*)?([0-9]{1,3}(?:,[0-9]{3})*\.[0-9]{2}|[0-9]+\.[0-9]{2})\b/gi;
+
+      // Pass 1: High-Confidence Anchored Regex (Total, Amount Paid, Total Fare, etc.)
+      const totalKeywordsRegex = /(?:grand\s*total|total\s*amount|total\s*fare|total\s*price|total\s*paid|amount\s*paid|amount\s*due|net\s*amount|jumlah\s*keseluruhan|jumlah\s*bayaran|jumlah|total\s*\(myr\)|total\s*\(rm\)|total)[\s\:\=]+(?:(?:RM|MYR|\$|USD|SGD|EUR|GBP)\s*)?([0-9]{1,3}(?:,[0-9]{3})*\.[0-9]{2}|[0-9]+\.[0-9]{2})/i;
+      
+      const anchorMatch = text.match(totalKeywordsRegex);
+      if (anchorMatch && anchorMatch[1]) {
+        primaryAmount = parseFloat(anchorMatch[1].replace(/,/g, ''));
+      }
+
+      // Pass 2: Line-by-line Scan if anchor on same line didn't hit
+      if (!primaryAmount) {
+        for (let i = 0; i < rawLines.length; i++) {
+          const line = rawLines[i].toLowerCase();
+          if (line.includes('total') || line.includes('amount') || line.includes('jumlah') || line.includes('fare')) {
+            // Check this line and the next line for monetary value
+            const candidateStr = rawLines[i] + " " + (rawLines[i + 1] || "");
+            const m = candidateStr.match(/(?:RM|MYR|\$|USD|SGD)?\s*([0-9]{1,3}(?:,[0-9]{3})*\.[0-9]{2}|[0-9]+\.[0-9]{2})/i);
+            if (m && m[1]) {
+              primaryAmount = parseFloat(m[1].replace(/,/g, ''));
+              break;
+            }
+          }
+        }
+      }
+
+      // Collect all candidate amounts across document for quick-pick chips
+      let match;
+      while ((match = currencyPattern.exec(text)) !== null) {
+        const val = parseFloat(match[1].replace(/,/g, ''));
+        // Ignore years (e.g. 2026.00) or tiny zeros
+        if (val > 0 && val !== 2024 && val !== 2025 && val !== 2026 && !detectedAmounts.includes(val)) {
+          detectedAmounts.push(val);
+        }
+      }
+
+      // If still no primary amount, default to the largest detected amount
+      if (!primaryAmount && detectedAmounts.length > 0) {
+        primaryAmount = Math.max(...detectedAmounts);
+      }
+
+      if (primaryAmount) {
+        document.getElementById('entryAmount').value = primaryAmount.toFixed(2);
+      }
+
+      // Render Detected Amounts Chips if multiple numbers found
+      if (detectedAmounts.length > 1) {
+        const chipsBox = document.getElementById('detectedAmountsChips');
+        const container = document.getElementById('detectedAmountsContainer');
+        chipsBox.innerHTML = '';
+        detectedAmounts.slice(0, 6).forEach(amt => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = `px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${amt === primaryAmount ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}`;
+          btn.textContent = `$${amt.toFixed(2)}`;
+          btn.onclick = (e) => {
+            e.stopPropagation();
+            document.getElementById('entryAmount').value = amt.toFixed(2);
+            chipsBox.querySelectorAll('button').forEach(b => b.className = 'px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 transition cursor-pointer');
+            btn.className = 'px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-indigo-600 text-white shadow-sm transition cursor-pointer';
+          };
+          chipsBox.appendChild(btn);
+        });
+        container.classList.remove('hidden');
+      }
+
+      // -------------------------------------------------------------
+      // 2. EXTRACT MERCHANT / DESCRIPTION
+      // -------------------------------------------------------------
+      let identifiedMerchant = null;
+      let matchedCategory = null;
+
+      // Known Merchant Brand Dictionary
+      const vendorDirectory = [
+        { brand: 'Trip.com', category: 'Flight & Holidays', keywords: ['trip.com', 'trip com', 'ctrip'] },
+        { brand: 'AirAsia', category: 'Flight & Holidays', keywords: ['airasia', 'air asia', 'teleport'] },
+        { brand: 'Malaysia Airlines', category: 'Flight & Holidays', keywords: ['malaysia airlines', 'mas', 'malaysian airline'] },
+        { brand: 'Batik Air', category: 'Flight & Holidays', keywords: ['batik air', 'malindo'] },
+        { brand: 'Grab', category: 'Travel & Commute', keywords: ['grab', 'grabpay', 'grabcar', 'grabfood'] },
+        { brand: 'Touch \'n Go', category: 'Travel & Commute', keywords: ['touch \'n go', 'touch n go', 'tng ewallet', 'tng digital'] },
+        { brand: 'Foodpanda', category: 'Meals & Dining', keywords: ['foodpanda', 'delivery hero'] },
+        { brand: 'Shopee', category: 'Housing & Rent', keywords: ['shopee', 'spaylater'] },
+        { brand: 'Lazada', category: 'Housing & Rent', keywords: ['lazada'] },
+        { brand: 'Starbucks', category: 'Meals & Dining', keywords: ['starbucks', 'berjaya starbucks'] },
+        { brand: 'McDonald\'s', category: 'Meals & Dining', keywords: ['mcdonald', 'gerbang alaf'] },
+        { brand: 'KFC', category: 'Meals & Dining', keywords: ['kfc', 'qsr stores'] },
+        { brand: 'Shell', category: 'Travel & Commute', keywords: ['shell'] },
+        { brand: 'Petronas', category: 'Travel & Commute', keywords: ['petronas', 'mesra'] },
+        { brand: 'Apple', category: 'Tech & Cloud', keywords: ['apple.com', 'itunes', 'apple store'] },
+        { brand: 'Google', category: 'Tech & Cloud', keywords: ['google', 'google cloud', 'google play'] },
+        { brand: 'Netflix', category: 'Tech & Cloud', keywords: ['netflix'] },
+        { brand: 'Spotify', category: 'Tech & Cloud', keywords: ['spotify'] },
+        { brand: 'Steam', category: 'Tech & Cloud', keywords: ['valve', 'steam'] }
+      ];
+
+      const lowerText = text.toLowerCase();
+      for (const item of vendorDirectory) {
+        if (item.keywords.some(k => lowerText.includes(k))) {
+          identifiedMerchant = item.brand;
+          matchedCategory = item.category;
+          break;
+        }
+      }
+
+      // Check for Flight / Airline Route Details (e.g., Kuching to Kuala Lumpur)
+      const routeMatch = text.match(/\b([A-Z][a-zA-Z\s]{2,15})\s+(?:to|->|-|–)\s+([A-Z][a-zA-Z\s]{2,15})\b/i);
+      if (routeMatch && (lowerText.includes('flight') || lowerText.includes('passenger') || lowerText.includes('trip'))) {
+        identifiedMerchant = identifiedMerchant 
+          ? `${identifiedMerchant}: Flight ${routeMatch[1].trim()} - ${routeMatch[2].trim()}`
+          : `Flight ${routeMatch[1].trim()} - ${routeMatch[2].trim()}`;
+        matchedCategory = 'Flight & Holidays';
+      }
+
+      // Fallback: If not recognized from dictionary, pick the cleanest top line
+      if (!identifiedMerchant) {
+        const blacklist = [
+          'tax invoice', 'invoice', 'official receipt', 'receipt', 'e-receipt', 'statement', 
+          'simplified tax invoice', 'original', 'copy', 'payment voucher', 'sales receipt', 
+          'cash bill', 'bill to', 'page 1', 'registration no', 'sst no', 'company no', 'customer copy'
+        ];
+
+        for (const line of rawLines.slice(0, 8)) {
+          const lLower = line.toLowerCase();
+          const isJunk = blacklist.some(b => lLower.includes(b)) || 
+                         lLower.length < 3 || 
+                         /\d{5,}/.test(line) || 
+                         lLower.includes('tel:') || 
+                         lLower.includes('phone:');
+
+          if (!isJunk) {
+            identifiedMerchant = line.replace(/[^a-zA-Z0-9\s\&\.\-]/g, '').trim();
+            break;
+          }
+        }
+      }
+
+      if (identifiedMerchant) {
+        document.getElementById('entryDescription').value = identifiedMerchant;
+      }
+
+      // Set Category if matched
+      if (matchedCategory) {
+        const catSelect = document.getElementById('entryCategory');
+        for (let i = 0; i < catSelect.options.length; i++) {
+          if (catSelect.options[i].value.toLowerCase().includes(matchedCategory.toLowerCase())) {
+            catSelect.selectedIndex = i;
+            break;
+          }
+        }
+      }
+
+      // -------------------------------------------------------------
+      // 3. EXTRACT DATE (DD/MM/YYYY, YYYY-MM-DD, Month DD YYYY)
+      // -------------------------------------------------------------
+      let parsedDate = null;
+
+      // Formats: 08/10/2026, 2026-10-08, 08-10-2026
+      const numericDateMatch = text.match(/\b(20\d{2})[-\/.](0?[1-9]|1[0-2])[-\/.](0?[1-9]|[12]\d|3[01])\b/) ||
+                               text.match(/\b(0?[1-9]|[12]\d|3[01])[-\/.](0?[1-9]|1[0-2])[-\/.](20\d{2})\b/);
+
+      if (numericDateMatch) {
+        if (numericDateMatch[1].length === 4) {
+          // YYYY-MM-DD
+          parsedDate = `${numericDateMatch[1]}-${String(numericDateMatch[2]).padStart(2, '0')}-${String(numericDateMatch[3]).padStart(2, '0')}`;
+        } else {
+          // DD-MM-YYYY
+          parsedDate = `${numericDateMatch[3]}-${String(numericDateMatch[2]).padStart(2, '0')}-${String(numericDateMatch[1]).padStart(2, '0')}`;
+        }
+      } else {
+        // Formats: 08 Oct 2026, October 8 2026
+        const textDateMatch = text.match(/\b(0?[1-9]|[12]\d|3[01])\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+(20\d{2})\b/i);
+        if (textDateMatch) {
+          const months = { jan:'01', feb:'02', mar:'03', apr:'04', may:'05', jun:'06', jul:'07', aug:'08', sep:'09', oct:'10', nov:'11', dec:'12' };
+          const mKey = textDateMatch[2].toLowerCase().substring(0, 3);
+          parsedDate = `${textDateMatch[3]}-${months[mKey]}-${String(textDateMatch[1]).padStart(2, '0')}`;
+        }
+      }
+
+      if (parsedDate) {
+        document.getElementById('entryDate').value = parsedDate;
+      }
+    }
+
+    // --- 5. SAVE TRANSACTION TO SUPABASE REST ---
     async function handleSaveTransaction() {
       const type = document.querySelector('input[name="entryType"]:checked').value;
       const date = document.getElementById('entryDate').value;
@@ -925,72 +917,76 @@
       btn.disabled = true;
       btnText.textContent = "Saving to cloud...";
 
-      const newTx = {
-        date,
-        type,
-        category,
-        description,
-        amount,
-        receipt_url: receiptUrl
-      };
-
       try {
-        const res = await fetch(`${SUPABASE_BASE}/transactions`, {
+        const payload = {
+          date,
+          type,
+          category,
+          description,
+          amount,
+          receipt_url: receiptUrl
+        };
+
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/transactions`, {
           method: 'POST',
-          headers: supabaseHeaders,
-          body: JSON.stringify(newTx)
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=representation'
+          },
+          body: JSON.stringify(payload)
         });
 
-        if (res.ok) {
-          const saved = await res.json();
-          transactions.unshift(saved[0] || { ...newTx, id: 'tx-' + Date.now() });
-          showToast("Saved to cloud!", "success");
-        } else {
-          newTx.id = 'loc-' + Date.now();
-          transactions.unshift(newTx);
-          document.getElementById('sqlSetupAlert').classList.remove('hidden');
-          showToast("Saved locally (Sync table setup needed).", "info");
+        const createdData = await res.json();
+        if (Array.isArray(createdData) && createdData[0]) {
+          transactions.unshift(createdData[0]);
         }
-      } catch (err) {
-        newTx.id = 'loc-' + Date.now();
-        transactions.unshift(newTx);
-        showToast("Saved locally (Offline mode).", "info");
-      } finally {
-        localStorage.setItem('wn_transactions_backup', JSON.stringify(transactions));
-        btn.disabled = false;
-        btnText.textContent = "Save Transaction";
+
         closeTransactionModal();
         renderDashboard();
-
-        // Reset inputs
+        
+        // Reset modal fields
         document.getElementById('entryAmount').value = '';
         document.getElementById('entryDescription').value = '';
-        clearUploadedReceipt();
+        document.getElementById('entryReceiptUrl').value = '';
+        document.getElementById('entryDate').value = new Date().toISOString().split('T')[0];
+        document.getElementById('pdfSuccessNotice').classList.add('hidden');
+        document.getElementById('detectedAmountsContainer').classList.add('hidden');
+
+        showToast("Transaction synced to cloud!", "success");
+      } catch (err) {
+        console.error("Save error:", err);
+        showToast("Failed to save transaction: " + err.message, "error");
+      } finally {
+        btn.disabled = false;
+        btnText.textContent = "Save to Cloud";
       }
     }
 
-    // --- 5. DELETE TRANSACTION ---
+    // --- 6. DELETE TRANSACTION ---
     async function deleteTransaction(id) {
-      if (!confirm("Are you sure you want to delete this transaction?")) return;
+      if (!confirm("Are you sure you want to delete this record?")) return;
 
       try {
-        if (!String(id).startsWith('loc-')) {
-          await fetch(`${SUPABASE_BASE}/transactions?id=eq.${id}`, {
-            method: 'DELETE',
-            headers: supabaseHeaders
-          });
-        }
-      } catch (err) {
-        console.error("Delete sync error:", err);
-      }
+        await fetch(`${SUPABASE_URL}/rest/v1/transactions?id=eq.${id}`, {
+          method: 'DELETE',
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+          }
+        });
 
-      transactions = transactions.filter(t => t.id !== id);
-      localStorage.setItem('wn_transactions_backup', JSON.stringify(transactions));
-      renderDashboard();
-      showToast("Transaction removed.", "info");
+        transactions = transactions.filter(t => t.id !== id);
+        renderDashboard();
+        showToast("Transaction removed from cloud.", "info");
+      } catch (err) {
+        console.error("Delete error:", err);
+        showToast("Failed to delete record.", "error");
+      }
     }
 
-    // --- 6. CATEGORY MANAGEMENT ---
+    // --- 7. CATEGORY MANAGEMENT ---
     async function handleAddCategory() {
       const name = document.getElementById('newCatName').value.trim();
       const type = document.getElementById('newCatType').value;
@@ -998,60 +994,30 @@
 
       if (!name) return;
 
-      if (categories.some(c => c.name.toLowerCase() === name.toLowerCase())) {
-        showToast(`Category "${name}" already exists.`, "error");
-        return;
-      }
-
-      const newCat = { name, type, color };
-
       try {
-        const res = await fetch(`${SUPABASE_BASE}/categories`, {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/categories`, {
           method: 'POST',
-          headers: supabaseHeaders,
-          body: JSON.stringify(newCat)
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=representation'
+          },
+          body: JSON.stringify({ name, type, color })
         });
-
-        if (res.ok) {
-          const saved = await res.json();
-          categories.push(saved[0] || { ...newCat, id: 'cat-' + Date.now() });
-        } else {
-          categories.push({ ...newCat, id: 'cat-' + Date.now() });
+        const created = await res.json();
+        if (Array.isArray(created) && created[0]) {
+          categories.push(created[0]);
         }
-      } catch (e) {
-        categories.push({ ...newCat, id: 'cat-' + Date.now() });
+
+        document.getElementById('newCatName').value = '';
+        filterCategoryDropdownByType();
+        renderCategoryModalItems();
+        renderDashboard();
+        showToast(`Category "${name}" created!`, "success");
+      } catch (err) {
+        console.error("Add category error:", err);
       }
-
-      localStorage.setItem('wn_categories_backup', JSON.stringify(categories));
-      document.getElementById('newCatName').value = '';
-      filterCategoryDropdownByType();
-      renderCategoryModalItems();
-      renderDashboard();
-      showToast(`Category "${name}" created!`, "success");
-    }
-
-    async function deleteCategory(catId) {
-      const cat = categories.find(c => c.id === catId);
-      if (!cat) return;
-
-      if (transactions.some(t => t.category === cat.name)) {
-        showToast(`Cannot delete "${cat.name}" because it is linked to transactions.`, "error");
-        return;
-      }
-
-      try {
-        await fetch(`${SUPABASE_BASE}/categories?id=eq.${catId}`, {
-          method: 'DELETE',
-          headers: supabaseHeaders
-        });
-      } catch (e) {}
-
-      categories = categories.filter(c => c.id !== catId);
-      localStorage.setItem('wn_categories_backup', JSON.stringify(categories));
-      filterCategoryDropdownByType();
-      renderCategoryModalItems();
-      renderDashboard();
-      showToast(`Category "${cat.name}" deleted.`, "info");
     }
 
     function renderCategoryModalItems() {
@@ -1061,23 +1027,16 @@
       categories.forEach(cat => {
         const usageCount = transactions.filter(t => t.category === cat.name).length;
         const div = document.createElement('div');
-        div.className = 'flex items-center justify-between p-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs';
+        div.className = 'flex items-center justify-between p-2.5 bg-[#030712] border border-slate-800 rounded-xl text-xs';
         div.innerHTML = `
-          <div class="flex items-center gap-2.5 min-w-0">
-            <span class="w-3.5 h-3.5 rounded-full flex-shrink-0" style="background-color: ${cat.color}"></span>
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="w-3 h-3 rounded-full flex-shrink-0" style="background-color: ${cat.color}"></span>
             <span class="font-bold text-slate-200 truncate">${escapeHtml(cat.name)}</span>
             <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full ${cat.type === 'income' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800/60' : 'bg-rose-950 text-rose-400 border border-rose-800/60'}">
               ${cat.type}
             </span>
           </div>
-          <div class="flex items-center gap-2 flex-shrink-0">
-            <span class="text-[10px] text-slate-500">${usageCount} used</span>
-            ${cat.id && !cat.id.startsWith('def-') ? `
-              <button onclick="deleteCategory('${cat.id}')" class="text-slate-500 hover:text-rose-400 p-1.5 transition">
-                <i class="fas fa-trash-alt"></i>
-              </button>
-            ` : ''}
-          </div>
+          <span class="text-[11px] text-slate-500">${usageCount} records</span>
         `;
         container.appendChild(div);
       });
@@ -1089,19 +1048,15 @@
       const matching = categories.filter(c => c.type === selectedType);
 
       select.innerHTML = '';
-      if (matching.length === 0) {
-        select.innerHTML = `<option value="">No ${selectedType} categories. Add one!</option>`;
-      } else {
-        matching.forEach(c => {
-          const opt = document.createElement('option');
-          opt.value = c.name;
-          opt.textContent = c.name;
-          select.appendChild(opt);
-        });
-      }
+      matching.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.name;
+        opt.textContent = c.name;
+        select.appendChild(opt);
+      });
     }
 
-    // --- 7. FILTERING & DASHBOARD DISPLAY ---
+    // --- 8. DASHBOARD RENDERING & ANALYTICS ---
     function getFilteredEntries() {
       const time = document.getElementById('timeFilter').value;
       const query = document.getElementById('ledgerSearchInput').value.toLowerCase().trim();
@@ -1137,41 +1092,45 @@
     function renderDashboard() {
       const entries = getFilteredEntries();
 
+      // Calculations
       const totalIncome = entries.filter(t => t.type === 'income').reduce((acc, t) => acc + Number(t.amount), 0);
       const totalExpense = entries.filter(t => t.type === 'expense').reduce((acc, t) => acc + Number(t.amount), 0);
       const netProfit = totalIncome - totalExpense;
       const margin = totalIncome > 0 ? Math.max(0, Math.round((netProfit / totalIncome) * 100)) : 0;
 
-      // KPIs
+      // Metric Card 1: Income
       document.getElementById('metricIncome').textContent = currencyFmt.format(totalIncome);
       document.getElementById('metricIncomeCount').textContent = `${entries.filter(t => t.type === 'income').length} deposits`;
 
+      // Metric Card 2: Expense
       document.getElementById('metricExpense').textContent = currencyFmt.format(totalExpense);
       document.getElementById('metricExpenseCount').textContent = `${entries.filter(t => t.type === 'expense').length} payments`;
 
+      // Metric Card 3: Net Balance
       const netEl = document.getElementById('metricNet');
       const netStatus = document.getElementById('metricNetStatus');
       netEl.textContent = `${netProfit >= 0 ? '' : '-'}${currencyFmt.format(Math.abs(netProfit))}`;
       if (netProfit >= 0) {
-        netEl.className = 'text-lg sm:text-2xl font-black text-emerald-400 truncate';
+        netEl.className = 'text-xl sm:text-2xl font-bold text-white truncate';
         netStatus.textContent = 'Net Surplus';
-        netStatus.className = 'text-[11px] text-emerald-400 font-bold mt-0.5 truncate';
+        netStatus.className = 'text-[11px] text-emerald-400 font-medium mt-0.5 truncate';
       } else {
-        netEl.className = 'text-lg sm:text-2xl font-black text-rose-400 truncate';
+        netEl.className = 'text-xl sm:text-2xl font-bold text-rose-400 truncate';
         netStatus.textContent = 'Net Deficit';
-        netStatus.className = 'text-[11px] text-rose-400 font-bold mt-0.5 truncate';
+        netStatus.className = 'text-[11px] text-rose-400 font-medium mt-0.5 truncate';
       }
 
+      // Metric Card 4: Margin
       document.getElementById('metricMargin').textContent = `${margin}%`;
       document.getElementById('metricMarginBar').style.width = `${Math.min(100, Math.max(0, margin))}%`;
 
-      // Peak Spending Day Alert
+      // Peak Spending Banner
       analyzePeakSpending(entries);
 
-      // Render Ledger
-      renderLedger(entries);
+      // Ledger Table
+      renderLedger();
 
-      // Render Charts
+      // Charts
       renderCharts(entries);
     }
 
@@ -1200,13 +1159,13 @@
         }
       }
 
-      if (peakDate && maxTotal > 0) {
+      if (peakDate) {
         const peakFormatted = new Date(peakDate + 'T00:00:00').toLocaleDateString('en-US', {
           month: 'short', day: 'numeric', year: 'numeric'
         });
         const topCategory = expenses.filter(e => e.date === peakDate).sort((a, b) => b.amount - a.amount)[0]?.category || 'General';
 
-        bannerText.innerHTML = `You spent the most money on <strong class="text-rose-400 font-bold">${peakFormatted}</strong> totaling <strong class="text-white font-black">${currencyFmt.format(maxTotal)}</strong> (Major: <em class="text-rose-300">${topCategory}</em>).`;
+        bannerText.innerHTML = `You spent the most money on <strong class="text-rose-400">${peakFormatted}</strong> totaling <strong class="text-white">${currencyFmt.format(maxTotal)}</strong> (Major: <em class="text-slate-400">${topCategory}</em>).`;
         bannerBadge.textContent = `Peak: ${currencyFmt.format(maxTotal)}`;
         banner.classList.remove('hidden');
       } else {
@@ -1214,13 +1173,12 @@
       }
     }
 
-    function renderLedger(entries) {
-      const mobileList = document.getElementById('mobileLedgerList');
+    function renderLedger() {
+      const entries = getFilteredEntries();
       const desktopTbody = document.getElementById('desktopLedgerBody');
       const emptyView = document.getElementById('emptyLedgerView');
       const countIndicator = document.getElementById('ledgerCountIndicator');
 
-      mobileList.innerHTML = '';
       desktopTbody.innerHTML = '';
       countIndicator.textContent = `Showing ${entries.length} record${entries.length === 1 ? '' : 's'}`;
 
@@ -1233,55 +1191,16 @@
       emptyView.classList.remove('flex');
 
       entries.forEach(item => {
-        const cat = categories.find(c => c.name === item.category) || { color: '#64748b' };
+        const cat = categories.find(c => c.name === item.category) || { color: '#6366f1' };
         const isIncome = item.type === 'income';
         const formattedDate = new Date(item.date + 'T00:00:00').toLocaleDateString('en-US', {
-          month: 'short', day: 'numeric'
-        });
-        const fullDate = new Date(item.date + 'T00:00:00').toLocaleDateString('en-US', {
           month: 'short', day: 'numeric', year: 'numeric'
         });
 
-        // Mobile Card
-        const card = document.createElement('div');
-        card.className = 'p-3 hover:bg-slate-800/40 rounded-xl transition flex items-center justify-between gap-3';
-        card.innerHTML = `
-          <div class="flex items-center gap-3 min-w-0">
-            <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background-color: ${cat.color}25; color: ${cat.color}; border: 1px solid ${cat.color}50">
-              <i class="fas ${isIncome ? 'fa-arrow-down' : 'fa-arrow-up'} text-sm"></i>
-            </div>
-            <div class="min-w-0">
-              <h4 class="text-xs font-bold text-slate-100 truncate">${escapeHtml(item.description)}</h4>
-              <div class="flex items-center gap-1.5 mt-0.5">
-                <span class="text-[10px] font-medium text-slate-400">${formattedDate}</span>
-                <span class="text-slate-600">•</span>
-                <span class="text-[10px] font-bold truncate" style="color: ${cat.color}">${escapeHtml(item.category)}</span>
-              </div>
-            </div>
-          </div>
-          <div class="text-right flex-shrink-0 flex flex-col items-end gap-1">
-            <span class="text-xs sm:text-sm font-bold ${isIncome ? 'text-emerald-400' : 'text-rose-400'}">
-              ${isIncome ? '+' : '-'}${currencyFmt.format(item.amount)}
-            </span>
-            <div class="flex items-center gap-1.5">
-              ${item.receipt_url ? `
-                <a href="${item.receipt_url}" target="_blank" download="receipt" class="text-indigo-400 hover:text-indigo-300 p-1 text-xs" title="View Receipt">
-                  <i class="fas fa-paperclip"></i>
-                </a>
-              ` : ''}
-              <button onclick="deleteTransaction('${item.id}')" class="text-slate-500 hover:text-rose-400 p-1 text-xs" title="Delete">
-                <i class="fas fa-trash-alt"></i>
-              </button>
-            </div>
-          </div>
-        `;
-        mobileList.appendChild(card);
-
-        // Desktop Row
         const tr = document.createElement('tr');
-        tr.className = 'hover:bg-slate-800/40 border-b border-slate-800 transition-colors';
+        tr.className = 'hover:bg-slate-800/40 border-b border-slate-800/80 transition-colors';
         tr.innerHTML = `
-          <td class="px-5 py-3.5 whitespace-nowrap font-medium text-slate-300">${fullDate}</td>
+          <td class="px-5 py-3.5 whitespace-nowrap text-slate-400 font-mono text-[11px]">${formattedDate}</td>
           <td class="px-5 py-3.5 font-bold text-white">${escapeHtml(item.description)}</td>
           <td class="px-5 py-3.5">
             <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold" style="background-color: ${cat.color}20; color: ${cat.color}; border: 1px solid ${cat.color}40">
@@ -1289,18 +1208,18 @@
               ${escapeHtml(item.category)}
             </span>
           </td>
-          <td class="px-5 py-3.5 text-right whitespace-nowrap font-bold ${isIncome ? 'text-emerald-400' : 'text-rose-400'}">
+          <td class="px-5 py-3.5 text-right whitespace-nowrap font-mono font-bold ${isIncome ? 'text-emerald-400' : 'text-rose-400'}">
             ${isIncome ? '+' : '-'}${currencyFmt.format(item.amount)}
           </td>
           <td class="px-5 py-3.5 text-center whitespace-nowrap">
             ${item.receipt_url ? `
-              <a href="${item.receipt_url}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-950 border border-indigo-700/60 text-indigo-300 text-[11px] font-semibold hover:bg-indigo-900 transition">
-                <i class="fas fa-paperclip"></i> Receipt
+              <a href="${item.receipt_url}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-950/70 border border-indigo-700/60 text-indigo-300 text-[11px] font-semibold hover:bg-indigo-900 transition">
+                <i class="fas fa-paperclip"></i> View
               </a>
             ` : '<span class="text-slate-600 text-xs">-</span>'}
           </td>
           <td class="px-5 py-3.5 text-center whitespace-nowrap">
-            <button onclick="deleteTransaction('${item.id}')" class="text-slate-500 hover:text-rose-400 p-2 transition inline-flex items-center justify-center">
+            <button onclick="deleteTransaction('${item.id}')" class="text-slate-500 hover:text-rose-400 p-2 transition">
               <i class="fas fa-trash-alt"></i>
             </button>
           </td>
@@ -1310,9 +1229,7 @@
     }
 
     function renderCharts(entries) {
-      if (typeof Chart === 'undefined') return;
-
-      // 1. Trends Line Chart
+      // 1. Daily Spending Trends Chart
       const expByDate = {};
       const incByDate = {};
 
@@ -1327,77 +1244,61 @@
 
       const uniqueDates = Array.from(new Set([...Object.keys(expByDate), ...Object.keys(incByDate)])).sort();
       const dateLabels = uniqueDates.map(d => {
-        const parts = d.split('-');
-        return `${parts[1]}/${parts[2]}`;
+        const p = d.split('-');
+        return `${p[1]}/${p[2]}`;
       });
 
       const expenseData = uniqueDates.map(d => expByDate[d] || 0);
       const incomeData = uniqueDates.map(d => incByDate[d] || 0);
 
       if (trendChart) trendChart.destroy();
-      const ctxTrend = document.getElementById('trendChart')?.getContext('2d');
-      if (ctxTrend) {
-        trendChart = new Chart(ctxTrend, {
-          type: 'line',
-          data: {
-            labels: dateLabels.length ? dateLabels : ['No Data'],
-            datasets: [
-              {
-                label: 'Expense',
-                data: expenseData.length ? expenseData : [0],
-                borderColor: '#f43f5e',
-                backgroundColor: 'rgba(244, 63, 94, 0.12)',
-                borderWidth: 2.5,
-                fill: true,
-                tension: 0.35,
-                pointRadius: 4,
-                pointBackgroundColor: '#0f172a',
-                pointBorderColor: '#f43f5e'
-              },
-              {
-                label: 'Income',
-                data: incomeData.length ? incomeData : [0],
-                borderColor: '#34d399',
-                borderWidth: 2,
-                borderDash: [4, 4],
-                tension: 0.35,
-                pointRadius: 3,
-                pointBackgroundColor: '#34d399'
-              }
-            ]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { display: false },
-              tooltip: {
-                backgroundColor: '#0f172a',
-                borderColor: '#334155',
-                borderWidth: 1,
-                callbacks: { label: ctx => ` ${ctx.dataset.label}: ${currencyFmt.format(ctx.raw)}` }
-              }
+      const ctxTrend = document.getElementById('trendChart').getContext('2d');
+      trendChart = new Chart(ctxTrend, {
+        type: 'line',
+        data: {
+          labels: dateLabels.length ? dateLabels : ['No Data'],
+          datasets: [
+            {
+              label: 'Expense',
+              data: expenseData.length ? expenseData : [0],
+              borderColor: '#f43f5e',
+              backgroundColor: 'rgba(244, 63, 94, 0.12)',
+              borderWidth: 2,
+              fill: true,
+              tension: 0.35,
+              pointRadius: 4,
+              pointBackgroundColor: '#f43f5e'
             },
-            scales: {
-              y: {
-                beginAtZero: true,
-                ticks: {
-                  callback: val => '$' + (val >= 1000 ? (val / 1000) + 'k' : val),
-                  font: { size: 10 },
-                  color: '#94a3b8'
-                },
-                grid: { color: 'rgba(255, 255, 255, 0.06)' }
-              },
-              x: {
-                ticks: { font: { size: 10 }, color: '#94a3b8' },
-                grid: { display: false }
-              }
+            {
+              label: 'Income',
+              data: incomeData.length ? incomeData : [0],
+              borderColor: '#10b981',
+              borderWidth: 2,
+              tension: 0.35,
+              pointRadius: 3,
+              pointBackgroundColor: '#10b981'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { callback: val => '$' + val, color: '#64748b', font: { size: 10 } },
+              grid: { color: 'rgba(255, 255, 255, 0.05)' }
+            },
+            x: {
+              ticks: { color: '#64748b', font: { size: 10 } },
+              grid: { display: false }
             }
           }
-        });
-      }
+        }
+      });
 
-      // 2. Category Doughnut Chart
+      // 2. Expenses Doughnut Chart
       const catSums = {};
       entries.filter(t => t.type === 'expense').forEach(e => {
         catSums[e.category] = (catSums[e.category] || 0) + Number(e.amount);
@@ -1407,39 +1308,29 @@
       const catValues = Object.values(catSums);
       const catColors = catLabels.map(name => {
         const found = categories.find(c => c.name === name);
-        return found ? found.color : '#64748b';
+        return found ? found.color : '#6366f1';
       });
 
       if (categoryChart) categoryChart.destroy();
-      const ctxCat = document.getElementById('categoryChart')?.getContext('2d');
-      if (ctxCat) {
-        categoryChart = new Chart(ctxCat, {
-          type: 'doughnut',
-          data: {
-            labels: catLabels.length ? catLabels : ['None'],
-            datasets: [{
-              data: catValues.length ? catValues : [1],
-              backgroundColor: catColors.length ? catColors : ['#334155'],
-              borderWidth: 2,
-              borderColor: '#0f172a'
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '72%',
-            plugins: {
-              legend: { display: false },
-              tooltip: {
-                backgroundColor: '#0f172a',
-                borderColor: '#334155',
-                borderWidth: 1,
-                callbacks: { label: ctx => ` ${ctx.label}: ${currencyFmt.format(ctx.raw)}` }
-              }
-            }
-          }
-        });
-      }
+      const ctxCat = document.getElementById('categoryChart').getContext('2d');
+      categoryChart = new Chart(ctxCat, {
+        type: 'doughnut',
+        data: {
+          labels: catLabels.length ? catLabels : ['None'],
+          datasets: [{
+            data: catValues.length ? catValues : [1],
+            backgroundColor: catColors.length ? catColors : ['#1e293b'],
+            borderWidth: 2,
+            borderColor: '#0b0f19'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '72%',
+          plugins: { legend: { display: false } }
+        }
+      });
 
       // Legend
       const legendBox = document.getElementById('categoryLegend');
@@ -1453,7 +1344,7 @@
           row.innerHTML = `
             <div class="flex items-center gap-2 truncate">
               <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background-color: ${catColors[i]}"></span>
-              <span class="truncate font-semibold text-slate-300">${escapeHtml(name)}</span>
+              <span class="truncate font-medium text-slate-300">${escapeHtml(name)}</span>
             </div>
             <span class="font-bold text-white ml-2 flex-shrink-0">${currencyFmt.format(catValues[i])}</span>
           `;
@@ -1462,7 +1353,7 @@
       }
     }
 
-    // --- 8. CSV EXPORT ---
+    // --- 9. EXPORT & MODAL HELPERS ---
     function exportToCSV() {
       const entries = getFilteredEntries();
       if (entries.length === 0) {
@@ -1470,21 +1361,14 @@
         return;
       }
 
-      const headers = ["ID", "Date", "Type", "Category", "Description", "Amount", "ReceiptURL"];
+      const headers = ["ID", "Date", "Type", "Category", "Description", "Amount"];
       const rows = entries.map(t => [
-        t.id,
-        t.date,
-        t.type,
-        `"${(t.category || '').replace(/"/g, '""')}"`,
-        `"${(t.description || '').replace(/"/g, '""')}"`,
-        t.amount,
-        `"${(t.receipt_url || '').replace(/"/g, '""')}"`
+        t.id, t.date, t.type, `"${(t.category || '').replace(/"/g, '""')}"`, `"${(t.description || '').replace(/"/g, '""')}"`, t.amount
       ]);
 
       const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
-      const encodedUri = encodeURI(csvContent);
       const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
+      link.setAttribute("href", encodeURI(csvContent));
       link.setAttribute("download", `WN_Money_Tracker_${new Date().toISOString().split('T')[0]}.csv`);
       document.body.appendChild(link);
       link.click();
@@ -1493,43 +1377,12 @@
       showToast("CSV ledger exported!", "success");
     }
 
-    // --- 9. COPY SQL SETUP QUERY ---
-    function copySqlSetup() {
-      const sql = `-- Run this in your Supabase SQL Editor once:
-create table if not exists public.transactions (
-  id uuid default gen_random_uuid() primary key,
-  date date not null,
-  type text not null check (type in ('income', 'expense')),
-  category text not null,
-  description text not null,
-  amount numeric(12,2) not null,
-  receipt_url text,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
-);
-
-create table if not exists public.categories (
-  id uuid default gen_random_uuid() primary key,
-  name text not null,
-  type text not null check (type in ('income', 'expense')),
-  color text default '#64748b',
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
-);
-
-alter table public.transactions disable row level security;
-alter table public.categories disable row level security;`;
-
-      navigator.clipboard.writeText(sql).then(() => {
-        showToast("SQL copied! Paste and run it in Supabase SQL editor.", "success");
-      }).catch(() => {
-        prompt("Copy this SQL code and run it in Supabase:", sql);
-      });
-    }
-
-    // Modal Helpers
     function openTransactionModal() {
       document.getElementById('entryDate').value = new Date().toISOString().split('T')[0];
       filterCategoryDropdownByType();
-      clearUploadedReceipt();
+      document.getElementById('pdfSuccessNotice').classList.add('hidden');
+      document.getElementById('pdfWarningNotice').classList.add('hidden');
+      document.getElementById('detectedAmountsContainer').classList.add('hidden');
       document.getElementById('txModal').classList.remove('hidden');
     }
     function closeTransactionModal() {
@@ -1544,7 +1397,6 @@ alter table public.categories disable row level security;`;
       filterCategoryDropdownByType();
     }
 
-    // Notifications Toast
     function showToast(message, type = "info") {
       const toast = document.getElementById('toast');
       const msgEl = document.getElementById('toastMessage');
@@ -1559,7 +1411,7 @@ alter table public.categories disable row level security;`;
         toast.className = 'fixed top-5 right-5 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-2xl border text-xs sm:text-sm font-semibold transition-all transform duration-300 translate-y-0 opacity-100 bg-emerald-950 border-emerald-800 text-emerald-200';
         iconEl.className = 'fas fa-circle-check text-emerald-400';
       } else {
-        toast.className = 'fixed top-5 right-5 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-2xl border text-xs sm:text-sm font-semibold transition-all transform duration-300 translate-y-0 opacity-100 bg-slate-900 border-slate-700 text-slate-100';
+        toast.className = 'fixed top-5 right-5 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-2xl border text-xs sm:text-sm font-semibold transition-all transform duration-300 translate-y-0 opacity-100 bg-[#111726] border-slate-700 text-slate-100';
         iconEl.className = 'fas fa-info-circle text-indigo-400';
       }
 
