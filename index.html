@@ -33,11 +33,11 @@
   <!-- FontAwesome 6 Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   
-  <!-- Chart.js CDN -->
+  <!-- Chart.js UMD -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   
-  <!-- Supabase JS Client v2 -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Supabase JS Client v2 (Browser UMD Bundle) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
   <style>
     * { -webkit-tap-highlight-color: transparent; }
@@ -83,8 +83,7 @@
         <div class="relative">
           <i class="fas fa-lock absolute left-4 top-3.5 text-slate-500 text-sm"></i>
           <input type="password" id="passcodeInput" maxlength="12" placeholder="Passcode" autofocus
-            class="w-full pl-11 pr-11 py-3 bg-slate-950 border border-slate-700/80 rounded-xl text-slate-100 placeholder-slate-500 text-center font-mono font-bold tracking-widest text-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-            onkeydown="if(event.key === 'Enter') handleUnlock()">
+            class="w-full pl-11 pr-11 py-3 bg-slate-950 border border-slate-700/80 rounded-xl text-slate-100 placeholder-slate-500 text-center font-mono font-bold tracking-widest text-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
           <button type="button" onclick="togglePasscodeVisibility()" class="absolute right-3.5 top-3.5 text-slate-500 hover:text-slate-300">
             <i id="eyeIcon" class="fas fa-eye text-sm"></i>
           </button>
@@ -169,7 +168,7 @@
         <div class="flex items-center gap-3">
           <i class="fas fa-triangle-exclamation text-amber-400 text-base"></i>
           <div>
-            <strong>Cloud database configuration needed:</strong> Click the button to copy the 1-click SQL setup script and run it in your Supabase SQL Editor.
+            <strong>Cloud database setup recommended:</strong> Run the 1-click SQL script in Supabase to sync entries across all your devices.
           </div>
         </div>
         <button onclick="copySqlSetupCode()" class="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold rounded-xl transition text-xs flex items-center gap-1.5 flex-shrink-0 cursor-pointer">
@@ -557,9 +556,8 @@
     const SUPABASE_URL = "https://yqknrymyggfzztcrnmiu.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlxa25yeW15Z2dmenp0Y3JubWl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0Njk5MjQsImV4cCI6MjEwNzA0NTkyNH0.bi10_LrEwnnyNJUCWh7R6oj9rOzmksdaD1cYBQpzdXI";
 
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
     // Global State
+    let supabase = null;
     let transactions = [];
     let categories = [];
     let trendChart = null;
@@ -581,109 +579,168 @@
       minimumFractionDigits: 2
     });
 
-    // --- APPLICATION STARTUP ---
-    window.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('entryDate').value = new Date().toISOString().split('T')[0];
-
-      // Check if device is already unlocked
-      if (localStorage.getItem('wn_tracker_unlocked') === 'true') {
-        unlockDashboard();
-      } else {
-        document.getElementById('passcodeOverlay').classList.remove('hidden');
-        document.getElementById('passcodeInput').focus();
-      }
-    });
-
-    // --- PASSCODE UNLOCK FLOW ---
+    // --- ZERO-DEPENDENCY UNLOCK HANDLERS (DEFINED FIRST) ---
     function handleUnlock() {
       const input = document.getElementById('passcodeInput');
       const errorBox = document.getElementById('passcodeError');
       const lockCard = document.getElementById('lockCard');
+      if (!input) return;
 
-      if (input.value === MASTER_PASSCODE) {
-        localStorage.setItem('wn_tracker_unlocked', 'true');
-        errorBox.classList.add('hidden');
+      const code = (input.value || '').trim();
+
+      if (code === MASTER_PASSCODE) {
+        try {
+          localStorage.setItem('wn_tracker_unlocked', 'true');
+        } catch (e) {
+          console.warn("Storage warning:", e);
+        }
+        if (errorBox) errorBox.classList.add('hidden');
         unlockDashboard();
       } else {
-        errorBox.classList.remove('hidden');
-        lockCard.classList.add('shake-anim');
-        setTimeout(() => lockCard.classList.remove('shake-anim'), 450);
+        if (errorBox) errorBox.classList.remove('hidden');
+        if (lockCard) {
+          lockCard.classList.add('shake-anim');
+          setTimeout(() => lockCard.classList.remove('shake-anim'), 450);
+        }
         input.value = '';
         input.focus();
       }
     }
 
     function unlockDashboard() {
-      document.getElementById('passcodeOverlay').classList.add('hidden');
-      document.getElementById('appContainer').classList.remove('hidden');
+      const overlay = document.getElementById('passcodeOverlay');
+      const app = document.getElementById('appContainer');
+      if (overlay) overlay.classList.add('hidden');
+      if (app) app.classList.remove('hidden');
+
+      // Initialize Supabase and render dashboard
+      initSupabaseClient();
       loadCloudData();
     }
 
     function lockWebsite() {
-      localStorage.removeItem('wn_tracker_unlocked');
+      try {
+        localStorage.removeItem('wn_tracker_unlocked');
+      } catch (e) {}
       window.location.reload();
     }
 
     function togglePasscodeVisibility() {
       const input = document.getElementById('passcodeInput');
       const icon = document.getElementById('eyeIcon');
+      if (!input) return;
+
       if (input.type === 'password') {
         input.type = 'text';
-        icon.className = 'fas fa-eye-slash text-sm';
+        if (icon) icon.className = 'fas fa-eye-slash text-sm';
       } else {
         input.type = 'password';
-        icon.className = 'fas fa-eye text-sm';
+        if (icon) icon.className = 'fas fa-eye text-sm';
       }
     }
+
+    // Attach to global window
+    window.handleUnlock = handleUnlock;
+    window.unlockDashboard = unlockDashboard;
+    window.lockWebsite = lockWebsite;
+    window.togglePasscodeVisibility = togglePasscodeVisibility;
+
+    // --- SUPABASE CLIENT INITIALIZATION ---
+    function initSupabaseClient() {
+      if (supabase) return;
+      try {
+        if (window.supabase && typeof window.supabase.createClient === 'function') {
+          supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        } else if (typeof createClient === 'function') {
+          supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
+      } catch (err) {
+        console.warn("Supabase init error:", err);
+      }
+    }
+
+    // --- APPLICATION STARTUP ---
+    window.addEventListener('DOMContentLoaded', () => {
+      const dateInput = document.getElementById('entryDate');
+      if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
+
+      // Bind Enter key listener
+      const passInput = document.getElementById('passcodeInput');
+      if (passInput) {
+        passInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            handleUnlock();
+          }
+        });
+      }
+
+      // Check existing session
+      let isUnlocked = false;
+      try {
+        isUnlocked = localStorage.getItem('wn_tracker_unlocked') === 'true';
+      } catch (e) {}
+
+      if (isUnlocked) {
+        unlockDashboard();
+      } else {
+        const overlay = document.getElementById('passcodeOverlay');
+        if (overlay) overlay.classList.remove('hidden');
+        if (passInput) setTimeout(() => passInput.focus(), 100);
+      }
+    });
 
     // --- CLOUD DATA FETCHING (SUPABASE) ---
     async function loadCloudData(showSyncToast = false) {
       const syncIcon = document.getElementById('syncIcon');
       if (syncIcon) syncIcon.classList.add('fa-spin');
 
+      initSupabaseClient();
       let tableMissing = false;
 
-      try {
-        // 1. Fetch Categories
-        const { data: dbCategories, error: catErr } = await supabase
-          .from('categories')
-          .select('*')
-          .order('created_at', { ascending: true });
+      if (supabase) {
+        try {
+          // 1. Fetch Categories
+          const { data: dbCategories, error: catErr } = await supabase
+            .from('categories')
+            .select('*')
+            .order('created_at', { ascending: true });
 
-        if (catErr) {
-          if (catErr.message.includes('relation') || catErr.code === '42P01') tableMissing = true;
-          console.warn("Categories fetch warning:", catErr.message);
+          if (catErr) {
+            if (catErr.message.includes('relation') || catErr.code === '42P01') tableMissing = true;
+          }
+
+          categories = [...defaultCategories, ...(dbCategories || [])];
+
+          // 2. Fetch Transactions
+          const { data: dbTransactions, error: txErr } = await supabase
+            .from('transactions')
+            .select('*')
+            .order('date', { ascending: false });
+
+          if (txErr) {
+            if (txErr.message.includes('relation') || txErr.code === '42P01') tableMissing = true;
+          }
+
+          transactions = dbTransactions || [];
+
+        } catch (err) {
+          console.error("Cloud fetch error:", err);
+          categories = defaultCategories;
+          transactions = [];
         }
-
-        categories = [...defaultCategories, ...(dbCategories || [])];
-
-        // 2. Fetch Transactions
-        const { data: dbTransactions, error: txErr } = await supabase
-          .from('transactions')
-          .select('*')
-          .order('date', { ascending: false });
-
-        if (txErr) {
-          if (txErr.message.includes('relation') || txErr.code === '42P01') tableMissing = true;
-          console.warn("Transactions fetch warning:", txErr.message);
-        }
-
-        transactions = dbTransactions || [];
-
-      } catch (err) {
-        console.error("Cloud fetch error:", err);
+      } else {
         categories = defaultCategories;
         transactions = [];
-      } finally {
-        if (syncIcon) syncIcon.classList.remove('fa-spin');
       }
 
-      // Check DB alert banner
+      if (syncIcon) syncIcon.classList.remove('fa-spin');
+
+      // Database alert display
       const dbAlert = document.getElementById('dbSetupAlert');
-      if (tableMissing) {
-        dbAlert.classList.remove('hidden');
-      } else {
-        dbAlert.classList.add('hidden');
+      if (dbAlert) {
+        if (tableMissing) dbAlert.classList.remove('hidden');
+        else dbAlert.classList.add('hidden');
       }
 
       filterCategoryDropdownByType();
@@ -695,7 +752,7 @@
 
     // --- SAVE TRANSACTION TO CLOUD ---
     async function handleSaveTransaction() {
-      const type = document.querySelector('input[name="entryType"]:checked').value;
+      const type = document.querySelector('input[name="entryType"]:checked')?.value || 'expense';
       const date = document.getElementById('entryDate').value;
       const amount = parseFloat(document.getElementById('entryAmount').value);
       const category = document.getElementById('entryCategory').value;
@@ -709,26 +766,37 @@
 
       const btn = document.getElementById('btnSaveTx');
       const btnText = document.getElementById('btnSaveTxText');
-      btn.disabled = true;
-      btnText.textContent = "Saving to cloud...";
+      if (btn) btn.disabled = true;
+      if (btnText) btnText.textContent = "Saving to cloud...";
+
+      initSupabaseClient();
 
       try {
-        const { data, error } = await supabase
-          .from('transactions')
-          .insert([{
+        if (supabase) {
+          const { data, error } = await supabase
+            .from('transactions')
+            .insert([{
+              date,
+              type,
+              category,
+              description,
+              amount,
+              receipt_url: receiptUrl
+            }])
+            .select();
+
+          if (error) throw error;
+          if (data && data[0]) transactions.unshift(data[0]);
+        } else {
+          transactions.unshift({
+            id: 'local-' + Date.now(),
             date,
             type,
             category,
             description,
             amount,
             receipt_url: receiptUrl
-          }])
-          .select();
-
-        if (error) throw error;
-
-        if (data && data[0]) {
-          transactions.unshift(data[0]);
+          });
         }
 
         closeTransactionModal();
@@ -744,10 +812,11 @@
       } catch (err) {
         console.error("Save error:", err);
         showToast("Failed to save: " + err.message, "error");
-        document.getElementById('dbSetupAlert').classList.remove('hidden');
+        const alertEl = document.getElementById('dbSetupAlert');
+        if (alertEl) alertEl.classList.remove('hidden');
       } finally {
-        btn.disabled = false;
-        btnText.textContent = "Save to Cloud";
+        if (btn) btn.disabled = false;
+        if (btnText) btnText.textContent = "Save to Cloud";
       }
     }
 
@@ -755,9 +824,12 @@
     async function deleteTransaction(id) {
       if (!confirm("Are you sure you want to delete this transaction?")) return;
 
+      initSupabaseClient();
       try {
-        const { error } = await supabase.from('transactions').delete().eq('id', id);
-        if (error) throw error;
+        if (supabase && !id.startsWith('local-')) {
+          const { error } = await supabase.from('transactions').delete().eq('id', id);
+          if (error) throw error;
+        }
 
         transactions = transactions.filter(t => t.id !== id);
         renderDashboard();
@@ -781,20 +853,18 @@
         return;
       }
 
+      initSupabaseClient();
+
       try {
-        const { data, error } = await supabase
-          .from('categories')
-          .insert([{
-            name,
-            type,
-            color
-          }])
-          .select();
+        if (supabase) {
+          const { data, error } = await supabase
+            .from('categories')
+            .insert([{ name, type, color }])
+            .select();
 
-        if (error) throw error;
-
-        if (data && data[0]) {
-          categories.push(data[0]);
+          if (error) throw error;
+          if (data && data[0]) categories.push(data[0]);
+          else categories.push({ id: 'cat-' + Date.now(), name, type, color });
         } else {
           categories.push({ id: 'cat-' + Date.now(), name, type, color });
         }
@@ -819,9 +889,13 @@
         return;
       }
 
+      initSupabaseClient();
+
       try {
-        const { error } = await supabase.from('categories').delete().eq('id', catId);
-        if (error) throw error;
+        if (supabase && !catId.startsWith('cat-') && !catId.startsWith('def-')) {
+          const { error } = await supabase.from('categories').delete().eq('id', catId);
+          if (error) throw error;
+        }
 
         categories = categories.filter(c => c.id !== catId);
         filterCategoryDropdownByType();
@@ -836,6 +910,7 @@
 
     function renderCategoryModalItems() {
       const container = document.getElementById('categoryItemsContainer');
+      if (!container) return;
       container.innerHTML = '';
 
       categories.forEach(cat => {
@@ -866,6 +941,7 @@
     function filterCategoryDropdownByType() {
       const selectedType = document.querySelector('input[name="entryType"]:checked')?.value || 'expense';
       const select = document.getElementById('entryCategory');
+      if (!select) return;
       const matching = categories.filter(c => c.type === selectedType);
 
       select.innerHTML = '';
@@ -883,8 +959,10 @@
 
     // --- FILTER TRANSACTIONS ---
     function getFilteredEntries() {
-      const time = document.getElementById('timeFilter').value;
-      const query = document.getElementById('ledgerSearchInput').value.toLowerCase().trim();
+      const timeEl = document.getElementById('timeFilter');
+      const searchEl = document.getElementById('ledgerSearchInput');
+      const time = timeEl ? timeEl.value : 'this_month';
+      const query = searchEl ? searchEl.value.toLowerCase().trim() : '';
 
       const today = new Date();
       const thisYear = today.getFullYear();
@@ -927,30 +1005,42 @@
       const margin = totalIncome > 0 ? Math.max(0, Math.round((netProfit / totalIncome) * 100)) : 0;
 
       // Metric 1: Income
-      document.getElementById('metricIncome').textContent = currencyFmt.format(totalIncome);
-      document.getElementById('metricIncomeCount').textContent = `${entries.filter(t => t.type === 'income').length} deposits`;
+      const metricIncome = document.getElementById('metricIncome');
+      const metricIncomeCount = document.getElementById('metricIncomeCount');
+      if (metricIncome) metricIncome.textContent = currencyFmt.format(totalIncome);
+      if (metricIncomeCount) metricIncomeCount.textContent = `${entries.filter(t => t.type === 'income').length} deposits`;
 
       // Metric 2: Expenses
-      document.getElementById('metricExpense').textContent = currencyFmt.format(totalExpense);
-      document.getElementById('metricExpenseCount').textContent = `${entries.filter(t => t.type === 'expense').length} expenses`;
+      const metricExpense = document.getElementById('metricExpense');
+      const metricExpenseCount = document.getElementById('metricExpenseCount');
+      if (metricExpense) metricExpense.textContent = currencyFmt.format(totalExpense);
+      if (metricExpenseCount) metricExpenseCount.textContent = `${entries.filter(t => t.type === 'expense').length} expenses`;
 
       // Metric 3: Net Profit
       const netEl = document.getElementById('metricNet');
       const netStatus = document.getElementById('metricNetStatus');
-      netEl.textContent = `${netProfit >= 0 ? '' : '-'}${currencyFmt.format(Math.abs(netProfit))}`;
-      if (netProfit >= 0) {
-        netEl.className = 'text-lg sm:text-2xl font-black text-emerald-400 truncate';
-        netStatus.textContent = 'Net Surplus';
-        netStatus.className = 'text-[11px] text-emerald-400 font-bold mt-0.5 truncate';
-      } else {
-        netEl.className = 'text-lg sm:text-2xl font-black text-rose-400 truncate';
-        netStatus.textContent = 'Net Deficit';
-        netStatus.className = 'text-[11px] text-rose-400 font-bold mt-0.5 truncate';
+      if (netEl) {
+        netEl.textContent = `${netProfit >= 0 ? '' : '-'}${currencyFmt.format(Math.abs(netProfit))}`;
+        if (netProfit >= 0) {
+          netEl.className = 'text-lg sm:text-2xl font-black text-emerald-400 truncate';
+          if (netStatus) {
+            netStatus.textContent = 'Net Surplus';
+            netStatus.className = 'text-[11px] text-emerald-400 font-bold mt-0.5 truncate';
+          }
+        } else {
+          netEl.className = 'text-lg sm:text-2xl font-black text-rose-400 truncate';
+          if (netStatus) {
+            netStatus.textContent = 'Net Deficit';
+            netStatus.className = 'text-[11px] text-rose-400 font-bold mt-0.5 truncate';
+          }
+        }
       }
 
       // Metric 4: Margin
-      document.getElementById('metricMargin').textContent = `${margin}%`;
-      document.getElementById('metricMarginBar').style.width = `${Math.min(100, Math.max(0, margin))}%`;
+      const metricMargin = document.getElementById('metricMargin');
+      const metricMarginBar = document.getElementById('metricMarginBar');
+      if (metricMargin) metricMargin.textContent = `${margin}%`;
+      if (metricMarginBar) metricMarginBar.style.width = `${Math.min(100, Math.max(0, margin))}%`;
 
       // Peak Spending Analysis
       analyzePeakSpending(entries);
@@ -967,6 +1057,8 @@
       const banner = document.getElementById('peakSpendingBanner');
       const bannerText = document.getElementById('peakSpendingText');
       const bannerBadge = document.getElementById('peakPeriodBadge');
+
+      if (!banner) return;
 
       if (expenses.length === 0) {
         banner.classList.add('hidden');
@@ -993,8 +1085,12 @@
         });
         const topCategory = expenses.filter(e => e.date === peakDate).sort((a, b) => b.amount - a.amount)[0]?.category || 'General';
 
-        bannerText.innerHTML = `You spent the most money on <strong class="text-rose-400 font-bold">${peakFormatted}</strong> totaling <strong class="text-white font-black">${currencyFmt.format(maxTotal)}</strong> (Primary category: <em class="text-rose-300">${topCategory}</em>).`;
-        bannerBadge.textContent = `Peak: ${currencyFmt.format(maxTotal)}`;
+        if (bannerText) {
+          bannerText.innerHTML = `You spent the most money on <strong class="text-rose-400 font-bold">${peakFormatted}</strong> totaling <strong class="text-white font-black">${currencyFmt.format(maxTotal)}</strong> (Primary category: <em class="text-rose-300">${topCategory}</em>).`;
+        }
+        if (bannerBadge) {
+          bannerBadge.textContent = `Peak: ${currencyFmt.format(maxTotal)}`;
+        }
         banner.classList.remove('hidden');
       } else {
         banner.classList.add('hidden');
@@ -1008,17 +1104,25 @@
       const emptyView = document.getElementById('emptyLedgerView');
       const countIndicator = document.getElementById('ledgerCountIndicator');
 
+      if (!mobileList || !desktopTbody) return;
+
       mobileList.innerHTML = '';
       desktopTbody.innerHTML = '';
-      countIndicator.textContent = `Showing ${entries.length} record${entries.length === 1 ? '' : 's'}`;
+      if (countIndicator) {
+        countIndicator.textContent = `Showing ${entries.length} record${entries.length === 1 ? '' : 's'}`;
+      }
 
       if (entries.length === 0) {
-        emptyView.classList.remove('hidden');
-        emptyView.classList.add('flex');
+        if (emptyView) {
+          emptyView.classList.remove('hidden');
+          emptyView.classList.add('flex');
+        }
         return;
       }
-      emptyView.classList.add('hidden');
-      emptyView.classList.remove('flex');
+      if (emptyView) {
+        emptyView.classList.add('hidden');
+        emptyView.classList.remove('flex');
+      }
 
       entries.forEach(item => {
         const cat = categories.find(c => c.name === item.category) || { color: '#64748b' };
@@ -1098,6 +1202,8 @@
     }
 
     function renderCharts(entries) {
+      if (typeof Chart === 'undefined') return;
+
       // 1. Trends Line Chart
       const expByDate = {};
       const incByDate = {};
@@ -1120,69 +1226,72 @@
       const expenseData = uniqueDates.map(d => expByDate[d] || 0);
       const incomeData = uniqueDates.map(d => incByDate[d] || 0);
 
-      if (trendChart) trendChart.destroy();
-      const ctxTrend = document.getElementById('trendChart').getContext('2d');
-      trendChart = new Chart(ctxTrend, {
-        type: 'line',
-        data: {
-          labels: dateLabels.length ? dateLabels : ['No Data'],
-          datasets: [
-            {
-              label: 'Expenses',
-              data: expenseData.length ? expenseData : [0],
-              borderColor: '#f43f5e',
-              backgroundColor: 'rgba(244, 63, 94, 0.12)',
-              borderWidth: 2.5,
-              fill: true,
-              tension: 0.35,
-              pointRadius: 4,
-              pointHoverRadius: 6,
-              pointBackgroundColor: '#0f172a',
-              pointBorderColor: '#f43f5e',
-              pointBorderWidth: 2
-            },
-            {
-              label: 'Income',
-              data: incomeData.length ? incomeData : [0],
-              borderColor: '#34d399',
-              borderWidth: 2,
-              borderDash: [4, 4],
-              tension: 0.35,
-              pointRadius: 3,
-              pointBackgroundColor: '#34d399'
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: { mode: 'index', intersect: false },
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              backgroundColor: '#0f172a',
-              borderColor: '#334155',
-              borderWidth: 1,
-              callbacks: { label: ctx => ` ${ctx.dataset.label}: ${currencyFmt.format(ctx.raw)}` }
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: {
-                callback: val => '$' + (val >= 1000 ? (val / 1000) + 'k' : val),
-                font: { size: 10 },
-                color: '#94a3b8'
+      const chartCanvas = document.getElementById('trendChart');
+      if (chartCanvas) {
+        if (trendChart) trendChart.destroy();
+        const ctxTrend = chartCanvas.getContext('2d');
+        trendChart = new Chart(ctxTrend, {
+          type: 'line',
+          data: {
+            labels: dateLabels.length ? dateLabels : ['No Data'],
+            datasets: [
+              {
+                label: 'Expenses',
+                data: expenseData.length ? expenseData : [0],
+                borderColor: '#f43f5e',
+                backgroundColor: 'rgba(244, 63, 94, 0.12)',
+                borderWidth: 2.5,
+                fill: true,
+                tension: 0.35,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                pointBackgroundColor: '#0f172a',
+                pointBorderColor: '#f43f5e',
+                pointBorderWidth: 2
               },
-              grid: { color: 'rgba(255, 255, 255, 0.06)' }
+              {
+                label: 'Income',
+                data: incomeData.length ? incomeData : [0],
+                borderColor: '#34d399',
+                borderWidth: 2,
+                borderDash: [4, 4],
+                tension: 0.35,
+                pointRadius: 3,
+                pointBackgroundColor: '#34d399'
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: '#0f172a',
+                borderColor: '#334155',
+                borderWidth: 1,
+                callbacks: { label: ctx => ` ${ctx.dataset.label}: ${currencyFmt.format(ctx.raw)}` }
+              }
             },
-            x: {
-              ticks: { font: { size: 10 }, color: '#94a3b8' },
-              grid: { display: false }
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  callback: val => '$' + (val >= 1000 ? (val / 1000) + 'k' : val),
+                  font: { size: 10 },
+                  color: '#94a3b8'
+                },
+                grid: { color: 'rgba(255, 255, 255, 0.06)' }
+              },
+              x: {
+                ticks: { font: { size: 10 }, color: '#94a3b8' },
+                grid: { display: false }
+              }
             }
           }
-        }
-      });
+        });
+      }
 
       // 2. Category Doughnut Chart
       const catSums = {};
@@ -1197,53 +1306,58 @@
         return found ? found.color : '#64748b';
       });
 
-      if (categoryChart) categoryChart.destroy();
-      const ctxCat = document.getElementById('categoryChart').getContext('2d');
-      categoryChart = new Chart(ctxCat, {
-        type: 'doughnut',
-        data: {
-          labels: catLabels.length ? catLabels : ['None'],
-          datasets: [{
-            data: catValues.length ? catValues : [1],
-            backgroundColor: catColors.length ? catColors : ['#334155'],
-            borderWidth: 2,
-            borderColor: '#0f172a'
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          cutout: '72%',
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              backgroundColor: '#0f172a',
-              borderColor: '#334155',
-              borderWidth: 1,
-              callbacks: { label: ctx => ` ${ctx.label}: ${currencyFmt.format(ctx.raw)}` }
+      const catCanvas = document.getElementById('categoryChart');
+      if (catCanvas) {
+        if (categoryChart) categoryChart.destroy();
+        const ctxCat = catCanvas.getContext('2d');
+        categoryChart = new Chart(ctxCat, {
+          type: 'doughnut',
+          data: {
+            labels: catLabels.length ? catLabels : ['None'],
+            datasets: [{
+              data: catValues.length ? catValues : [1],
+              backgroundColor: catColors.length ? catColors : ['#334155'],
+              borderWidth: 2,
+              borderColor: '#0f172a'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '72%',
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: '#0f172a',
+                borderColor: '#334155',
+                borderWidth: 1,
+                callbacks: { label: ctx => ` ${ctx.label}: ${currencyFmt.format(ctx.raw)}` }
+              }
             }
           }
-        }
-      });
+        });
+      }
 
       // Category Legend Box
       const legendBox = document.getElementById('categoryLegend');
-      legendBox.innerHTML = '';
-      if (catLabels.length === 0) {
-        legendBox.innerHTML = `<p class="text-slate-500 italic text-center py-2 text-[11px]">No expense categories recorded</p>`;
-      } else {
-        catLabels.forEach((name, i) => {
-          const row = document.createElement('div');
-          row.className = 'flex items-center justify-between py-1 border-b border-slate-800/60';
-          row.innerHTML = `
-            <div class="flex items-center gap-2 truncate">
-              <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background-color: ${catColors[i]}"></span>
-              <span class="truncate font-semibold text-slate-300">${escapeHtml(name)}</span>
-            </div>
-            <span class="font-bold text-white ml-2 flex-shrink-0">${currencyFmt.format(catValues[i])}</span>
-          `;
-          legendBox.appendChild(row);
-        });
+      if (legendBox) {
+        legendBox.innerHTML = '';
+        if (catLabels.length === 0) {
+          legendBox.innerHTML = `<p class="text-slate-500 italic text-center py-2 text-[11px]">No expense categories recorded</p>`;
+        } else {
+          catLabels.forEach((name, i) => {
+            const row = document.createElement('div');
+            row.className = 'flex items-center justify-between py-1 border-b border-slate-800/60';
+            row.innerHTML = `
+              <div class="flex items-center gap-2 truncate">
+                <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background-color: ${catColors[i]}"></span>
+                <span class="truncate font-semibold text-slate-300">${escapeHtml(name)}</span>
+              </div>
+              <span class="font-bold text-white ml-2 flex-shrink-0">${currencyFmt.format(catValues[i])}</span>
+            `;
+            legendBox.appendChild(row);
+          });
+        }
       }
     }
 
@@ -1300,11 +1414,9 @@ create table if not exists public.categories (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- Remove user_id constraints if tables were created previously
 alter table public.transactions drop column if exists user_id cascade;
 alter table public.categories drop column if exists user_id cascade;
 
--- Disable Row Level Security so your passcode site syncs directly
 alter table public.transactions disable row level security;
 alter table public.categories disable row level security;`;
 
@@ -1338,18 +1450,19 @@ alter table public.categories disable row level security;`;
       const toast = document.getElementById('toast');
       const msgEl = document.getElementById('toastMessage');
       const iconEl = document.getElementById('toastIcon');
+      if (!toast || !msgEl) return;
 
       msgEl.textContent = message;
 
       if (type === 'error') {
         toast.className = 'fixed top-5 right-5 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-2xl border text-xs sm:text-sm font-semibold transition-all transform duration-300 translate-y-0 opacity-100 bg-rose-950 border-rose-800 text-rose-200';
-        iconEl.className = 'fas fa-circle-exclamation text-rose-400';
+        if (iconEl) iconEl.className = 'fas fa-circle-exclamation text-rose-400';
       } else if (type === 'success') {
         toast.className = 'fixed top-5 right-5 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-2xl border text-xs sm:text-sm font-semibold transition-all transform duration-300 translate-y-0 opacity-100 bg-emerald-950 border-emerald-800 text-emerald-200';
-        iconEl.className = 'fas fa-circle-check text-emerald-400';
+        if (iconEl) iconEl.className = 'fas fa-circle-check text-emerald-400';
       } else {
         toast.className = 'fixed top-5 right-5 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-2xl border text-xs sm:text-sm font-semibold transition-all transform duration-300 translate-y-0 opacity-100 bg-slate-900 border-slate-700 text-slate-100';
-        iconEl.className = 'fas fa-info-circle text-indigo-400';
+        if (iconEl) iconEl.className = 'fas fa-info-circle text-indigo-400';
       }
 
       setTimeout(() => {
