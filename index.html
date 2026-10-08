@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>WN Money Tracker | Cloud Bookkeeping</title>
+  <title>WN Money Tracker</title>
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -15,95 +15,74 @@
           colors: {
             brand: {
               50: '#eef2ff',
-              100: '#e0e7ff',
               500: '#6366f1',
               600: '#4f46e5',
-              700: '#4338ca',
-              900: '#0f172a',
+              700: '#4338ca'
             }
-          },
-          fontFamily: {
-            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
           }
         }
       }
-    }
+    };
   </script>
   
-  <!-- FontAwesome 6 Icons -->
+  <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   
-  <!-- Chart.js UMD -->
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  
-  <!-- Supabase JS Client v2 (Browser UMD Bundle) -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
   <style>
     * { -webkit-tap-highlight-color: transparent; }
-    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #020617; color: #f8fafc; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #020617; color: #f8fafc; }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #0f172a; }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: #475569; }
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      20%, 60% { transform: translateX(-8px); }
-      40%, 80% { transform: translateX(8px); }
-    }
-    .shake-anim { animation: shake 0.4s ease-in-out; }
-    @media (max-width: 639px) {
-      .mobile-sheet {
-        border-bottom-left-radius: 0;
-        border-bottom-right-radius: 0;
-        border-top-left-radius: 1.5rem;
-        border-top-right-radius: 1.5rem;
-        max-height: 92vh;
-      }
-    }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen antialiased flex flex-col justify-between selection:bg-indigo-600 selection:text-white">
 
   <!-- ================= 1. PASSCODE LOCK SCREEN (888888) ================= -->
-  <div id="passcodeOverlay" class="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center p-4">
-    <div id="lockCard" class="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-8 text-center relative overflow-hidden transition-all">
-      <!-- Ambient Glow -->
-      <div class="absolute -top-12 -right-12 w-36 h-36 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
+  <div id="authOverlay" class="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center p-4">
+    <div class="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-8 text-center relative overflow-hidden">
+      
+      <!-- Top Decorative Glow -->
+      <div class="absolute -top-12 -right-12 w-36 h-36 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
 
-      <!-- Icon & Branding -->
-      <div class="w-16 h-16 bg-gradient-to-tr from-indigo-600 to-indigo-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-600/30 text-white text-2xl font-black">
+      <!-- Icon -->
+      <div class="w-14 h-14 bg-gradient-to-tr from-indigo-600 to-indigo-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-600/30 text-white font-black text-xl">
         WN
       </div>
-      <h1 class="text-xl font-black tracking-tight text-white mb-1">WN Money Tracker</h1>
-      <p class="text-xs text-slate-400 mb-6">Enter website passcode to access cloud ledger</p>
 
-      <!-- PIN Input -->
-      <div class="space-y-4">
-        <div class="relative">
-          <i class="fas fa-lock absolute left-4 top-3.5 text-slate-500 text-sm"></i>
-          <input type="password" id="passcodeInput" maxlength="12" placeholder="Passcode" autofocus
-            class="w-full pl-11 pr-11 py-3 bg-slate-950 border border-slate-700/80 rounded-xl text-slate-100 placeholder-slate-500 text-center font-mono font-bold tracking-widest text-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
-          <button type="button" onclick="togglePasscodeVisibility()" class="absolute right-3.5 top-3.5 text-slate-500 hover:text-slate-300">
-            <i id="eyeIcon" class="fas fa-eye text-sm"></i>
-          </button>
+      <h1 class="text-xl sm:text-2xl font-black tracking-tight text-white mb-1">WN Money Tracker</h1>
+      <p class="text-xs text-slate-400 mb-6">Enter master passcode to unlock your ledger</p>
+
+      <!-- Input Field -->
+      <div class="space-y-4 text-left">
+        <div>
+          <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Passcode</label>
+          <div class="relative">
+            <i class="fas fa-lock absolute left-3.5 top-3.5 text-slate-500 text-sm"></i>
+            <input type="password" id="passcodeInput" placeholder="Enter 6-digit code" maxlength="12"
+              class="w-full pl-10 pr-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 text-sm tracking-widest font-mono font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+              onkeydown="if(event.key === 'Enter') handleUnlock()">
+          </div>
         </div>
 
         <button type="button" id="btnUnlock" onclick="handleUnlock()"
           class="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-bold rounded-xl text-sm transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 cursor-pointer">
-          <i class="fas fa-arrow-right-to-bracket text-xs"></i>
+          <i class="fas fa-key text-xs"></i>
           <span>Unlock Tracker</span>
         </button>
+      </div>
 
-        <div id="passcodeError" class="text-xs text-rose-400 font-semibold hidden flex items-center justify-center gap-1.5 pt-1">
-          <i class="fas fa-circle-exclamation"></i>
-          <span>Incorrect passcode. Please try again.</span>
-        </div>
+      <!-- Error Box -->
+      <div id="passcodeError" class="mt-4 text-xs text-rose-300 bg-rose-950/60 border border-rose-800 rounded-xl p-2.5 hidden text-center">
+        Incorrect passcode. Please try again.
       </div>
 
       <div class="mt-6 pt-4 border-t border-slate-800 text-[11px] text-slate-500 flex items-center justify-center gap-1.5">
-        <i class="fas fa-cloud text-indigo-400"></i>
-        <span>Synced across all your devices in real-time</span>
+        <i class="fas fa-cloud text-[10px] text-emerald-400"></i>
+        <span>Multi-device cloud synchronization</span>
       </div>
     </div>
   </div>
@@ -111,49 +90,42 @@
   <!-- ================= 2. MAIN APPLICATION INTERFACE ================= -->
   <div id="appContainer" class="hidden min-h-screen flex flex-col justify-between">
     
-    <!-- Top Navigation Header -->
+    <!-- Top Navigation -->
     <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-30">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
-        
-        <!-- Brand -->
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-gradient-to-tr from-indigo-600 to-indigo-500 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-600/30 text-white font-bold flex-shrink-0">
+          <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-600/30 text-white font-black text-sm">
             WN
           </div>
           <div>
             <div class="flex items-center gap-2">
               <h1 class="text-sm sm:text-base font-bold text-white tracking-tight">WN Money Tracker</h1>
-              <span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-950/80 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-800/60 hidden sm:inline-block">Cloud Synced</span>
+              <span id="syncStatusBadge" class="text-[10px] font-bold uppercase tracking-wider bg-emerald-950/80 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-800/60 flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Cloud Synced
+              </span>
             </div>
-            <p class="text-[11px] text-slate-400 hidden sm:block">Personal Cross-Device Bookkeeping & Analytics</p>
+            <p class="text-[11px] text-slate-400 hidden sm:block">Automated Bookkeeping & Cash Flow Intelligence</p>
           </div>
         </div>
 
-        <!-- Header Actions -->
         <div class="flex items-center gap-2 sm:gap-3">
-          <!-- Live Cloud Sync Refresh Button -->
-          <button onclick="loadCloudData(true)" title="Sync latest data from cloud"
-            class="h-9 px-3 bg-slate-800 hover:bg-slate-750 text-slate-300 border border-slate-700 rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer">
-            <i id="syncIcon" class="fas fa-arrows-rotate text-indigo-400"></i>
-            <span class="hidden md:inline font-semibold">Sync</span>
+          <!-- Refresh / Sync Button -->
+          <button onclick="syncFromCloud()" title="Sync with Cloud"
+            class="h-9 w-9 sm:w-auto sm:px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer">
+            <i id="syncIcon" class="fas fa-rotate"></i>
+            <span class="hidden sm:inline">Sync</span>
           </button>
 
-          <!-- Add Transaction (Desktop) -->
-          <button onclick="openTransactionModal()" class="hidden sm:inline-flex h-9 px-3.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold items-center gap-1.5 shadow-md shadow-indigo-600/30 transition-all cursor-pointer">
+          <!-- Add Entry Button -->
+          <button onclick="openTransactionModal()" class="h-9 px-3.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md shadow-indigo-600/30 transition cursor-pointer">
             <i class="fas fa-plus"></i>
-            <span>Add Entry</span>
-          </button>
-
-          <!-- Manage Categories -->
-          <button onclick="openCategoryModal()" class="h-9 px-3 bg-slate-800 hover:bg-slate-750 text-slate-300 border border-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer">
-            <i class="fas fa-tags text-indigo-400"></i>
-            <span class="hidden md:inline">Categories</span>
+            <span class="hidden sm:inline">Add Entry</span>
           </button>
 
           <!-- Lock Button -->
-          <button onclick="lockWebsite()" title="Lock website"
-            class="h-9 px-3 bg-slate-800 hover:bg-rose-950/60 hover:text-rose-300 hover:border-rose-800/80 text-slate-400 border border-slate-700 rounded-xl text-xs flex items-center gap-1.5 transition-colors cursor-pointer">
-            <i class="fas fa-lock text-xs"></i>
+          <button onclick="handleLock()" title="Lock App"
+            class="h-9 px-2.5 sm:px-3 bg-slate-800 hover:bg-rose-950/60 hover:text-rose-300 hover:border-rose-800 text-slate-400 border border-slate-700 rounded-xl text-xs flex items-center gap-1.5 transition cursor-pointer">
+            <i class="fas fa-lock"></i>
             <span class="hidden sm:inline">Lock</span>
           </button>
         </div>
@@ -163,72 +135,72 @@
     <!-- Main Content Area -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full space-y-6 flex-grow pb-24 sm:pb-12">
 
-      <!-- Table Setup Notice (Appears only if SQL tables aren't created yet) -->
-      <div id="dbSetupAlert" class="hidden bg-amber-950/40 border border-amber-800/80 p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-200">
+      <!-- Setup Notice (Only visible if Supabase tables haven't been run) -->
+      <div id="sqlSetupAlert" class="hidden bg-amber-950/40 border border-amber-600/60 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-200">
         <div class="flex items-center gap-3">
-          <i class="fas fa-triangle-exclamation text-amber-400 text-base"></i>
+          <i class="fas fa-database text-amber-400 text-lg"></i>
           <div>
-            <strong>Cloud database setup recommended:</strong> Run the 1-click SQL script in Supabase to sync entries across all your devices.
+            <span class="font-bold block text-sm text-white">Database Table Setup Required</span>
+            <span>Your Supabase project needs the <code class="bg-amber-900/50 px-1 py-0.5 rounded text-amber-300 font-mono">transactions</code> table created to sync across devices.</span>
           </div>
         </div>
-        <button onclick="copySqlSetupCode()" class="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold rounded-xl transition text-xs flex items-center gap-1.5 flex-shrink-0 cursor-pointer">
-          <i class="fas fa-copy"></i>
-          <span>Copy Setup SQL</span>
+        <button onclick="copySqlSetup()" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold rounded-lg whitespace-nowrap cursor-pointer">
+          <i class="fas fa-copy mr-1"></i> Copy SQL Query
         </button>
       </div>
 
       <!-- Peak Spending Callout Banner -->
       <div id="peakSpendingBanner" class="hidden bg-gradient-to-r from-rose-950/40 via-amber-950/20 to-slate-900 border border-rose-900/50 p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-rose-600/80 text-white flex items-center justify-center flex-shrink-0 shadow-sm shadow-rose-600/30 border border-rose-500/40">
+          <div class="w-10 h-10 rounded-xl bg-rose-600/80 text-white flex items-center justify-center flex-shrink-0 shadow-sm border border-rose-500/40">
             <i class="fas fa-chart-line text-sm"></i>
           </div>
           <div>
-            <h3 class="text-xs font-bold uppercase tracking-wider text-rose-400">Peak Spending Insight</h3>
-            <p id="peakSpendingText" class="text-xs sm:text-sm text-slate-300 font-normal mt-0.5">Analyzing spending timeline...</p>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-rose-400">Peak Spending Day</h3>
+            <p id="peakSpendingText" class="text-xs sm:text-sm text-slate-300 font-normal mt-0.5">Analyzing your expense trends...</p>
           </div>
         </div>
-        <div class="flex items-center gap-2 self-end sm:self-center">
-          <span id="peakPeriodBadge" class="px-3 py-1 bg-slate-800 text-rose-300 font-bold text-xs rounded-lg border border-rose-800/60 shadow-xs">Peak Day</span>
-        </div>
+        <span id="peakPeriodBadge" class="self-end sm:self-center px-3 py-1 bg-slate-800 text-rose-300 font-bold text-xs rounded-lg border border-rose-800/60">
+          Peak
+        </span>
       </div>
 
-      <!-- Summary KPI Cards -->
+      <!-- Financial KPI Cards -->
       <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
         <!-- Income -->
         <div class="bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-800/90 shadow-sm">
-          <div class="flex items-center justify-between">
-            <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">Total Income</span>
-            <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-950 text-emerald-400 border border-emerald-800/60 flex items-center justify-center text-xs">
+          <div class="flex items-center justify-between text-slate-400">
+            <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider">Total Income</span>
+            <span class="w-7 h-7 rounded-lg bg-emerald-950 text-emerald-400 border border-emerald-800/60 flex items-center justify-center text-xs">
               <i class="fas fa-arrow-down"></i>
             </span>
           </div>
           <div class="mt-2 sm:mt-3">
             <h4 id="metricIncome" class="text-lg sm:text-2xl font-black text-emerald-400 truncate">$0.00</h4>
-            <p id="metricIncomeCount" class="text-[11px] text-emerald-400/80 font-semibold mt-0.5 truncate">0 deposits</p>
+            <p id="metricIncomeCount" class="text-[11px] text-emerald-400/80 font-semibold mt-0.5 truncate">0 entries</p>
           </div>
         </div>
 
         <!-- Expenses -->
         <div class="bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-800/90 shadow-sm">
-          <div class="flex items-center justify-between">
-            <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">Total Expenses</span>
-            <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-rose-950 text-rose-400 border border-rose-800/60 flex items-center justify-center text-xs">
+          <div class="flex items-center justify-between text-slate-400">
+            <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider">Total Expenses</span>
+            <span class="w-7 h-7 rounded-lg bg-rose-950 text-rose-400 border border-rose-800/60 flex items-center justify-center text-xs">
               <i class="fas fa-arrow-up"></i>
             </span>
           </div>
           <div class="mt-2 sm:mt-3">
             <h4 id="metricExpense" class="text-lg sm:text-2xl font-black text-rose-400 truncate">$0.00</h4>
-            <p id="metricExpenseCount" class="text-[11px] text-rose-400/80 font-semibold mt-0.5 truncate">0 expenses</p>
+            <p id="metricExpenseCount" class="text-[11px] text-rose-400/80 font-semibold mt-0.5 truncate">0 entries</p>
           </div>
         </div>
 
         <!-- Net Profit -->
         <div class="bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-800/90 shadow-sm">
-          <div class="flex items-center justify-between">
-            <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">Net Balance</span>
-            <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-indigo-950 text-indigo-400 border border-indigo-800/60 flex items-center justify-center text-xs">
-              <i class="fas fa-scale-balanced"></i>
+          <div class="flex items-center justify-between text-slate-400">
+            <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider">Net Balance</span>
+            <span class="w-7 h-7 rounded-lg bg-indigo-950 text-indigo-400 border border-indigo-800/60 flex items-center justify-center text-xs">
+              <i class="fas fa-wallet"></i>
             </span>
           </div>
           <div class="mt-2 sm:mt-3">
@@ -239,10 +211,10 @@
 
         <!-- Margin -->
         <div class="bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-800/90 shadow-sm">
-          <div class="flex items-center justify-between">
-            <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">Margin</span>
-            <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-sky-950 text-sky-400 border border-sky-800/60 flex items-center justify-center text-xs">
-              <i class="fas fa-percentage"></i>
+          <div class="flex items-center justify-between text-slate-400">
+            <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider">Savings Margin</span>
+            <span class="w-7 h-7 rounded-lg bg-sky-950 text-sky-400 border border-sky-800/60 flex items-center justify-center text-xs">
+              <i class="fas fa-percent"></i>
             </span>
           </div>
           <div class="mt-2 sm:mt-3">
@@ -254,80 +226,84 @@
         </div>
       </section>
 
-      <!-- Charts Grid -->
+      <!-- Charts Section -->
       <section class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <!-- Timeline Line Chart -->
+        <!-- Line Chart: Cash Flow Trends -->
         <div class="lg:col-span-2 bg-slate-900 rounded-2xl p-4 sm:p-6 border border-slate-800/90 shadow-sm flex flex-col justify-between">
           <div class="flex items-center justify-between mb-3">
             <div>
-              <h3 class="text-sm sm:text-base font-bold text-white">Cash Flow & Peak Spending Days</h3>
-              <p class="text-xs text-slate-400">Daily spending spikes vs. income deposits</p>
+              <h3 class="text-sm sm:text-base font-bold text-white">Daily Spending & Cash Flow</h3>
+              <p class="text-xs text-slate-400">Timeline of expenses vs. income</p>
             </div>
             <div class="flex items-center gap-3 text-xs font-medium">
-              <span class="flex items-center gap-1.5 text-slate-300"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Outflow</span>
-              <span class="flex items-center gap-1.5 text-slate-300"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> Inflow</span>
+              <span class="flex items-center gap-1.5 text-slate-300"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Expense</span>
+              <span class="flex items-center gap-1.5 text-slate-300"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> Income</span>
             </div>
           </div>
-          <div class="relative w-full h-56 sm:h-72">
+          <div class="relative w-full h-56 sm:h-64">
             <canvas id="trendChart"></canvas>
           </div>
         </div>
 
-        <!-- Doughnut Category Chart -->
-        <div class="bg-slate-900 rounded-2xl p-4 sm:p-6 border border-slate-800/90 shadow-sm flex flex-col">
+        <!-- Doughnut Chart: Expenses by Category -->
+        <div class="bg-slate-900 rounded-2xl p-4 sm:p-6 border border-slate-800/90 shadow-sm flex flex-col justify-between">
           <div class="flex items-center justify-between mb-3">
             <div>
-              <h3 class="text-sm sm:text-base font-bold text-white">Expense Breakdown</h3>
-              <p class="text-xs text-slate-400">Categorized expenditure</p>
+              <h3 class="text-sm sm:text-base font-bold text-white">Expenses by Category</h3>
+              <p class="text-xs text-slate-400">Breakdown of outflows</p>
             </div>
             <i class="fas fa-chart-pie text-slate-500 text-sm"></i>
           </div>
-          <div class="relative w-full h-44 sm:h-52 flex items-center justify-center">
+          <div class="relative w-full h-44 sm:h-48 flex items-center justify-center">
             <canvas id="categoryChart"></canvas>
           </div>
-          <div id="categoryLegend" class="mt-3 pt-3 border-t border-slate-800 max-h-36 overflow-y-auto space-y-1.5 text-xs"></div>
+          <div id="categoryLegend" class="mt-3 pt-3 border-t border-slate-800 max-h-32 overflow-y-auto space-y-1.5 text-xs"></div>
         </div>
       </section>
 
       <!-- Ledger Section -->
       <section class="bg-slate-900 rounded-2xl border border-slate-800/90 shadow-sm overflow-hidden">
         
-        <!-- Filter Toolbar -->
+        <!-- Filters Toolbar -->
         <div class="p-4 sm:p-5 border-b border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
-            <h3 class="text-sm sm:text-base font-bold text-white">Financial Ledger</h3>
-            <p class="text-xs text-slate-400">Shared cloud entries synced across devices</p>
+            <h3 class="text-sm sm:text-base font-bold text-white">Transaction Ledger</h3>
+            <p class="text-xs text-slate-400">All recorded transactions with cloud receipts</p>
           </div>
 
           <div class="flex flex-wrap items-center gap-2">
             <!-- Search -->
             <div class="relative flex-grow sm:flex-grow-0 w-full sm:w-48">
               <i class="fas fa-search absolute left-3 top-2.5 text-xs text-slate-500"></i>
-              <input type="text" id="ledgerSearchInput" oninput="renderLedger()" placeholder="Search entries..." 
+              <input type="text" id="ledgerSearchInput" oninput="renderDashboard()" placeholder="Search description..." 
                 class="w-full text-xs pl-8 pr-3 py-2 bg-slate-800 border border-slate-700 text-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none placeholder-slate-500">
             </div>
 
             <!-- Time Filter -->
-            <div class="relative">
-              <select id="timeFilter" onchange="renderDashboard()" class="text-xs bg-slate-800 border border-slate-700 text-slate-200 rounded-xl py-2 px-3 pr-8 focus:ring-2 focus:ring-indigo-500 focus:outline-none cursor-pointer">
-                <option value="this_month" selected>This Month</option>
-                <option value="prev_month">Previous Month</option>
-                <option value="all">All Records</option>
-              </select>
-            </div>
+            <select id="timeFilter" onchange="renderDashboard()" class="text-xs bg-slate-800 border border-slate-700 text-slate-200 rounded-xl py-2 px-3 focus:outline-none cursor-pointer">
+              <option value="this_month" selected>This Month</option>
+              <option value="prev_month">Previous Month</option>
+              <option value="all">All Records</option>
+            </select>
 
-            <!-- CSV Export -->
-            <button onclick="exportToCSV()" class="h-8 sm:h-9 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition border border-slate-700 cursor-pointer" title="Export Ledger to CSV">
-              <i class="fas fa-file-csv text-slate-400"></i>
+            <!-- Manage Categories Button -->
+            <button onclick="openCategoryModal()" class="h-8 sm:h-9 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl flex items-center gap-1.5 border border-slate-700 transition cursor-pointer">
+              <i class="fas fa-tags text-indigo-400"></i>
+              <span>Categories</span>
+            </button>
+
+            <!-- Export to CSV -->
+            <button onclick="exportToCSV()" class="h-8 sm:h-9 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl flex items-center gap-1.5 border border-slate-700 transition cursor-pointer">
+              <i class="fas fa-file-csv text-emerald-400"></i>
               <span class="hidden sm:inline">Export</span>
             </button>
           </div>
         </div>
 
-        <!-- Mobile Card View (< 768px) -->
+        <!-- 1. Mobile Cards View (< 768px) -->
         <div id="mobileLedgerList" class="block md:hidden divide-y divide-slate-800 p-2"></div>
 
-        <!-- Desktop Table View (>= 768px) -->
+        <!-- 2. Desktop Table (>= 768px) -->
         <div class="hidden md:block overflow-x-auto">
           <table class="w-full text-left text-xs text-slate-300">
             <thead class="bg-slate-800/50 text-slate-400 uppercase font-semibold text-[11px] border-b border-slate-800">
@@ -350,17 +326,16 @@
             <i class="fas fa-receipt text-xl"></i>
           </div>
           <h4 class="text-sm font-bold text-slate-300">No Transactions Found</h4>
-          <p class="text-xs text-slate-500 mt-1 max-w-xs">No entries match your selected period or search filter.</p>
+          <p class="text-xs text-slate-500 mt-1 max-w-xs">No entries match your search or filter.</p>
           <button onclick="openTransactionModal()" class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-500 cursor-pointer">
-            Add First Entry
+            Add New Entry
           </button>
         </div>
 
-        <!-- Table Footer -->
         <div class="px-5 py-3 bg-slate-800/30 border-t border-slate-800 text-xs text-slate-400 flex items-center justify-between">
           <span id="ledgerCountIndicator">Showing 0 records</span>
           <span class="text-[11px] text-slate-500 flex items-center gap-1.5">
-            <i class="fas fa-cloud text-emerald-400"></i> Cloud Synced
+            <i class="fas fa-cloud text-emerald-400"></i> Supabase Cloud Sync
           </span>
         </div>
       </section>
@@ -368,63 +343,59 @@
     </main>
 
     <!-- Mobile Bottom Navigation Bar -->
-    <div class="fixed bottom-0 inset-x-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 py-2 px-6 flex sm:hidden items-center justify-around z-40 shadow-xl">
+    <div class="fixed bottom-0 inset-x-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 py-2 px-6 flex sm:hidden items-center justify-around z-40">
       <button onclick="openCategoryModal()" class="flex flex-col items-center justify-center text-slate-400 hover:text-indigo-400 py-1 min-w-[50px] min-h-[44px]">
         <i class="fas fa-tags text-base"></i>
         <span class="text-[10px] font-medium mt-0.5">Categories</span>
       </button>
 
-      <!-- Center Floating Action Button -->
-      <button onclick="openTransactionModal()" class="w-13 h-13 -mt-6 bg-gradient-to-tr from-indigo-600 to-indigo-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-indigo-600/50 active:scale-95 transition-transform min-w-[48px] min-h-[48px]">
-        <i class="fas fa-plus text-lg"></i>
+      <button onclick="openTransactionModal()" class="w-12 h-12 -mt-5 bg-gradient-to-tr from-indigo-600 to-indigo-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-indigo-600/50 active:scale-95 transition-transform min-w-[48px] min-h-[48px]">
+        <i class="fas fa-plus text-base"></i>
       </button>
 
-      <button onclick="exportToCSV()" class="flex flex-col items-center justify-center text-slate-400 hover:text-indigo-400 py-1 min-w-[50px] min-h-[44px]">
-        <i class="fas fa-download text-base"></i>
-        <span class="text-[10px] font-medium mt-0.5">Export</span>
+      <button onclick="syncFromCloud()" class="flex flex-col items-center justify-center text-slate-400 hover:text-indigo-400 py-1 min-w-[50px] min-h-[44px]">
+        <i class="fas fa-rotate text-base"></i>
+        <span class="text-[10px] font-medium mt-0.5">Sync</span>
       </button>
     </div>
 
-    <!-- Footer -->
+    <!-- Footer Desktop -->
     <footer class="border-t border-slate-800 py-4 text-center text-xs text-slate-600 hidden sm:block">
-      WN Money Tracker &bull; Cloud storage secured via Supabase
+      WN Money Tracker &bull; Secured with master passcode &bull; Cloud sync via Supabase
     </footer>
   </div>
 
   <!-- ================= 3. TRANSACTION ENTRY MODAL ================= -->
   <div id="txModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
-    <div class="mobile-sheet bg-slate-900 border border-slate-800 w-full sm:max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+    <div class="bg-slate-900 border border-slate-800 w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
       
-      <!-- Header -->
       <div class="px-5 py-4 bg-slate-950 text-white flex items-center justify-between border-b border-slate-800 flex-shrink-0">
         <div class="flex items-center gap-2">
           <span class="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-xs">
             <i class="fas fa-file-invoice-dollar"></i>
           </span>
-          <h3 class="text-sm sm:text-base font-bold">New Ledger Entry</h3>
+          <h3 class="text-sm sm:text-base font-bold">New Transaction</h3>
         </div>
         <button onclick="closeTransactionModal()" class="w-8 h-8 rounded-lg text-slate-400 hover:text-white flex items-center justify-center text-sm cursor-pointer">
           <i class="fas fa-times"></i>
         </button>
       </div>
 
-      <!-- Form Body -->
       <div class="p-5 overflow-y-auto space-y-4 flex-grow text-slate-200">
-        
-        <!-- Type Pill Selector -->
+        <!-- Type Selector -->
         <div>
           <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Transaction Type</label>
           <div class="grid grid-cols-2 gap-2 p-1 bg-slate-950 rounded-xl border border-slate-800">
             <label class="cursor-pointer">
               <input type="radio" name="entryType" value="expense" class="peer sr-only" checked onchange="filterCategoryDropdownByType()">
               <div class="text-center py-2.5 rounded-lg font-bold text-xs text-slate-400 peer-checked:bg-slate-800 peer-checked:text-rose-400 peer-checked:border peer-checked:border-slate-700 transition-all flex items-center justify-center gap-1.5">
-                <i class="fas fa-arrow-up"></i> Expense (Outflow)
+                <i class="fas fa-arrow-up"></i> Expense
               </div>
             </label>
             <label class="cursor-pointer">
               <input type="radio" name="entryType" value="income" class="peer sr-only" onchange="filterCategoryDropdownByType()">
               <div class="text-center py-2.5 rounded-lg font-bold text-xs text-slate-400 peer-checked:bg-slate-800 peer-checked:text-emerald-400 peer-checked:border peer-checked:border-slate-700 transition-all flex items-center justify-center gap-1.5">
-                <i class="fas fa-arrow-down"></i> Income (Inflow)
+                <i class="fas fa-arrow-down"></i> Income
               </div>
             </label>
           </div>
@@ -450,22 +421,21 @@
           <div class="flex items-center justify-between mb-1">
             <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400">Category *</label>
             <button type="button" onclick="openCategoryModal()" class="text-xs text-indigo-400 font-semibold hover:underline">
-              + Manage Categories
+              + Add Category
             </button>
           </div>
           <div class="relative">
             <select id="entryCategory" required class="w-full text-xs font-semibold px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none pr-8 min-h-[44px] cursor-pointer"></select>
-            <i class="fas fa-chevron-down absolute right-3 top-3.5 text-[10px] text-slate-400 pointer-events-none"></i>
           </div>
         </div>
 
         <!-- Description -->
         <div>
           <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Description / Merchant *</label>
-          <input type="text" id="entryDescription" placeholder="e.g. Groceries, AWS cloud, salary deposit" required class="w-full text-xs px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none min-h-[44px]">
+          <input type="text" id="entryDescription" placeholder="e.g. Grocery shopping, Software subscription, Salary" required class="w-full text-xs px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none min-h-[44px]">
         </div>
 
-        <!-- Optional Receipt Image URL -->
+        <!-- Receipt URL -->
         <div>
           <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
             Receipt Image URL <span class="text-slate-500 font-normal lowercase">(optional)</span>
@@ -476,12 +446,12 @@
           </div>
         </div>
 
-        <!-- Save Button -->
+        <!-- Submit Button -->
         <div class="pt-2">
           <button type="button" id="btnSaveTx" onclick="handleSaveTransaction()" 
-            class="w-full bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-bold text-xs sm:text-sm py-3 px-4 rounded-xl shadow-md shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 min-h-[46px] cursor-pointer">
+            class="w-full bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-bold text-xs sm:text-sm py-3 px-4 rounded-xl shadow-md shadow-indigo-600/30 transition flex items-center justify-center gap-2 min-h-[46px] cursor-pointer">
             <i class="fas fa-cloud-arrow-up"></i>
-            <span id="btnSaveTxText">Save to Cloud</span>
+            <span id="btnSaveTxText">Save Transaction</span>
           </button>
         </div>
       </div>
@@ -490,14 +460,14 @@
 
   <!-- ================= 4. CATEGORY MANAGER MODAL ================= -->
   <div id="catModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
-    <div class="mobile-sheet bg-slate-900 border border-slate-800 w-full sm:max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+    <div class="bg-slate-900 border border-slate-800 w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
       
       <div class="px-5 py-4 bg-slate-950 text-white flex items-center justify-between border-b border-slate-800 flex-shrink-0">
         <div class="flex items-center gap-2">
           <span class="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-xs">
             <i class="fas fa-tags"></i>
           </span>
-          <h3 class="text-sm sm:text-base font-bold">Category Manager</h3>
+          <h3 class="text-sm sm:text-base font-bold">Manage Categories</h3>
         </div>
         <button onclick="closeCategoryModal()" class="w-8 h-8 rounded-lg text-slate-400 hover:text-white flex items-center justify-center text-sm cursor-pointer">
           <i class="fas fa-times"></i>
@@ -505,11 +475,11 @@
       </div>
 
       <div class="p-5 overflow-y-auto space-y-4">
-        <!-- New Category Creation -->
+        <!-- Add New -->
         <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl space-y-3">
-          <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Create Custom Category</h4>
+          <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Add New Category</h4>
           <div class="grid grid-cols-3 gap-2">
-            <input type="text" id="newCatName" placeholder="Name" class="col-span-2 text-xs px-3 py-2 bg-slate-800 border border-slate-700 text-white rounded-lg focus:outline-none min-h-[40px]">
+            <input type="text" id="newCatName" placeholder="Category name" class="col-span-2 text-xs px-3 py-2 bg-slate-800 border border-slate-700 text-white rounded-lg focus:outline-none min-h-[40px]">
             <select id="newCatType" class="text-xs px-2 py-2 bg-slate-800 border border-slate-700 text-slate-200 rounded-lg focus:outline-none min-h-[40px]">
               <option value="expense">Expense</option>
               <option value="income">Income</option>
@@ -517,16 +487,16 @@
           </div>
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
-              <label class="text-[11px] font-semibold text-slate-400">Color Tag:</label>
+              <label class="text-[11px] font-semibold text-slate-400">Color:</label>
               <input type="color" id="newCatColor" value="#6366f1" class="w-8 h-8 rounded-lg border border-slate-700 bg-slate-800 p-0.5 cursor-pointer">
             </div>
             <button type="button" onclick="handleAddCategory()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-2 rounded-lg transition min-h-[40px] flex items-center gap-1.5 cursor-pointer">
-              <i class="fas fa-plus"></i> Add
+              <i class="fas fa-plus"></i> Add Category
             </button>
           </div>
         </div>
 
-        <!-- List Categories -->
+        <!-- List -->
         <div>
           <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Active Categories</h4>
           <div id="categoryItemsContainer" class="space-y-2 max-h-56 overflow-y-auto pr-1"></div>
@@ -541,36 +511,42 @@
     </div>
   </div>
 
-  <!-- Toast Notification -->
+  <!-- Notification Toast -->
   <div id="toast" class="fixed top-5 right-5 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-2xl border text-xs sm:text-sm font-semibold transition-all transform duration-300 translate-y-[-20px] opacity-0 pointer-events-none">
     <i id="toastIcon" class="fas fa-info-circle text-base"></i>
     <span id="toastMessage">Notification</span>
   </div>
 
-  <!-- ================= 5. JAVASCRIPT LOGIC ================= -->
+  <!-- ================= 5. CORE LOGIC (PASSCODE & SUPABASE REST) ================= -->
   <script>
-    // Master Website Passcode
+    // Master Access Passcode
     const MASTER_PASSCODE = "888888";
 
-    // Supabase Credentials
-    const SUPABASE_URL = "https://yqknrymyggfzztcrnmiu.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlxa25yeW15Z2dmenp0Y3JubWl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0Njk5MjQsImV4cCI6MjEwNzA0NTkyNH0.bi10_LrEwnnyNJUCWh7R6oj9rOzmksdaD1cYBQpzdXI";
+    // Supabase Configuration
+    const SUPABASE_BASE = "https://yqknrymyggfzztcrnmiu.supabase.co/rest/v1";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlxa25yeW15Z2dmenp0Y3JubWl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0Njk5MjQsImV4cCI6MjEwNzA0NTkyNH0.bi10_LrEwnnyNJUCWh7R6oj9rOzmksdaD1cYBQpzdXI";
 
-    // Global State
-    let supabase = null;
+    const supabaseHeaders = {
+      "apikey": SUPABASE_KEY,
+      "Authorization": `Bearer ${SUPABASE_KEY}`,
+      "Content-Type": "application/json",
+      "Prefer": "return=representation"
+    };
+
+    // State
     let transactions = [];
     let categories = [];
     let trendChart = null;
     let categoryChart = null;
 
     const defaultCategories = [
-      { id: 'def-1', name: 'Housing & Utilities', type: 'expense', color: '#6366f1' },
-      { id: 'def-2', name: 'Software & Cloud', type: 'expense', color: '#0ea5e9' },
-      { id: 'def-3', name: 'Meals & Dining', type: 'expense', color: '#f43f5e' },
-      { id: 'def-4', name: 'Travel & Commute', type: 'expense', color: '#f59e0b' },
-      { id: 'def-5', name: 'Office Supplies', type: 'expense', color: '#a855f7' },
-      { id: 'def-6', name: 'Consulting & Sales', type: 'income', color: '#10b981' },
-      { id: 'def-7', name: 'Salary & Dividends', type: 'income', color: '#34d399' }
+      { id: 'def-1', name: 'Housing & Rent', type: 'expense', color: '#6366f1' },
+      { id: 'def-2', name: 'Food & Groceries', type: 'expense', color: '#f43f5e' },
+      { id: 'def-3', name: 'Transportation', type: 'expense', color: '#f59e0b' },
+      { id: 'def-4', name: 'Entertainment', type: 'expense', color: '#a855f7' },
+      { id: 'def-5', name: 'Software & Bills', type: 'expense', color: '#0ea5e9' },
+      { id: 'def-6', name: 'Salary & Earnings', type: 'income', color: '#10b981' },
+      { id: 'def-7', name: 'Investments', type: 'income', color: '#34d399' }
     ];
 
     const currencyFmt = new Intl.NumberFormat('en-US', {
@@ -579,180 +555,119 @@
       minimumFractionDigits: 2
     });
 
-    // --- ZERO-DEPENDENCY UNLOCK HANDLERS (DEFINED FIRST) ---
+    // --- 1. BULLETPROOF UNLOCK HANDLER ---
     function handleUnlock() {
       const input = document.getElementById('passcodeInput');
-      const errorBox = document.getElementById('passcodeError');
-      const lockCard = document.getElementById('lockCard');
-      if (!input) return;
+      const errBox = document.getElementById('passcodeError');
+      const entered = input ? input.value.trim() : '';
 
-      const code = (input.value || '').trim();
-
-      if (code === MASTER_PASSCODE) {
-        try {
-          localStorage.setItem('wn_tracker_unlocked', 'true');
-        } catch (e) {
-          console.warn("Storage warning:", e);
-        }
-        if (errorBox) errorBox.classList.add('hidden');
-        unlockDashboard();
+      if (entered === MASTER_PASSCODE) {
+        if (errBox) errBox.classList.add('hidden');
+        localStorage.setItem('wn_tracker_unlocked', 'true');
+        showDashboard();
       } else {
-        if (errorBox) errorBox.classList.remove('hidden');
-        if (lockCard) {
-          lockCard.classList.add('shake-anim');
-          setTimeout(() => lockCard.classList.remove('shake-anim'), 450);
+        if (errBox) errBox.classList.remove('hidden');
+        if (input) {
+          input.value = '';
+          input.focus();
         }
-        input.value = '';
-        input.focus();
       }
     }
 
-    function unlockDashboard() {
-      const overlay = document.getElementById('passcodeOverlay');
-      const app = document.getElementById('appContainer');
-      if (overlay) overlay.classList.add('hidden');
-      if (app) app.classList.remove('hidden');
-
-      // Initialize Supabase and render dashboard
-      initSupabaseClient();
-      loadCloudData();
-    }
-
-    function lockWebsite() {
-      try {
-        localStorage.removeItem('wn_tracker_unlocked');
-      } catch (e) {}
-      window.location.reload();
-    }
-
-    function togglePasscodeVisibility() {
+    function handleLock() {
+      localStorage.removeItem('wn_tracker_unlocked');
+      document.getElementById('appContainer').classList.add('hidden');
+      document.getElementById('authOverlay').classList.remove('hidden');
       const input = document.getElementById('passcodeInput');
-      const icon = document.getElementById('eyeIcon');
-      if (!input) return;
-
-      if (input.type === 'password') {
-        input.type = 'text';
-        if (icon) icon.className = 'fas fa-eye-slash text-sm';
-      } else {
-        input.type = 'password';
-        if (icon) icon.className = 'fas fa-eye text-sm';
-      }
+      if (input) input.value = '';
     }
 
-    // Attach to global window
-    window.handleUnlock = handleUnlock;
-    window.unlockDashboard = unlockDashboard;
-    window.lockWebsite = lockWebsite;
-    window.togglePasscodeVisibility = togglePasscodeVisibility;
-
-    // --- SUPABASE CLIENT INITIALIZATION ---
-    function initSupabaseClient() {
-      if (supabase) return;
-      try {
-        if (window.supabase && typeof window.supabase.createClient === 'function') {
-          supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        } else if (typeof createClient === 'function') {
-          supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        }
-      } catch (err) {
-        console.warn("Supabase init error:", err);
-      }
+    function showDashboard() {
+      document.getElementById('authOverlay').classList.add('hidden');
+      document.getElementById('appContainer').classList.remove('hidden');
+      document.getElementById('entryDate').value = new Date().toISOString().split('T')[0];
+      
+      // Load local memory first, then sync from Supabase
+      loadLocalState();
+      syncFromCloud();
     }
 
-    // --- APPLICATION STARTUP ---
+    // Check unlock on page load
     window.addEventListener('DOMContentLoaded', () => {
-      const dateInput = document.getElementById('entryDate');
-      if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
-
-      // Bind Enter key listener
-      const passInput = document.getElementById('passcodeInput');
-      if (passInput) {
-        passInput.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            handleUnlock();
-          }
-        });
-      }
-
-      // Check existing session
-      let isUnlocked = false;
-      try {
-        isUnlocked = localStorage.getItem('wn_tracker_unlocked') === 'true';
-      } catch (e) {}
-
-      if (isUnlocked) {
-        unlockDashboard();
+      if (localStorage.getItem('wn_tracker_unlocked') === 'true') {
+        showDashboard();
       } else {
-        const overlay = document.getElementById('passcodeOverlay');
-        if (overlay) overlay.classList.remove('hidden');
-        if (passInput) setTimeout(() => passInput.focus(), 100);
+        document.getElementById('authOverlay').classList.remove('hidden');
+        document.getElementById('appContainer').classList.add('hidden');
+        const input = document.getElementById('passcodeInput');
+        if (input) input.focus();
       }
     });
 
-    // --- CLOUD DATA FETCHING (SUPABASE) ---
-    async function loadCloudData(showSyncToast = false) {
+    // --- 2. CLOUD DATABASE SYNC (VIA DIRECT REST API) ---
+    async function syncFromCloud() {
       const syncIcon = document.getElementById('syncIcon');
       if (syncIcon) syncIcon.classList.add('fa-spin');
 
-      initSupabaseClient();
-      let tableMissing = false;
+      try {
+        // Fetch Categories
+        const catRes = await fetch(`${SUPABASE_BASE}/categories?select=*&order=created_at.asc`, {
+          method: 'GET',
+          headers: supabaseHeaders
+        });
 
-      if (supabase) {
-        try {
-          // 1. Fetch Categories
-          const { data: dbCategories, error: catErr } = await supabase
-            .from('categories')
-            .select('*')
-            .order('created_at', { ascending: true });
-
-          if (catErr) {
-            if (catErr.message.includes('relation') || catErr.code === '42P01') tableMissing = true;
-          }
-
-          categories = [...defaultCategories, ...(dbCategories || [])];
-
-          // 2. Fetch Transactions
-          const { data: dbTransactions, error: txErr } = await supabase
-            .from('transactions')
-            .select('*')
-            .order('date', { ascending: false });
-
-          if (txErr) {
-            if (txErr.message.includes('relation') || txErr.code === '42P01') tableMissing = true;
-          }
-
-          transactions = dbTransactions || [];
-
-        } catch (err) {
-          console.error("Cloud fetch error:", err);
-          categories = defaultCategories;
-          transactions = [];
+        if (catRes.ok) {
+          const cloudCats = await catRes.json();
+          categories = [...defaultCategories, ...(cloudCats || [])];
+          localStorage.setItem('wn_categories_backup', JSON.stringify(categories));
         }
-      } else {
+
+        // Fetch Transactions
+        const txRes = await fetch(`${SUPABASE_BASE}/transactions?select=*&order=date.desc`, {
+          method: 'GET',
+          headers: supabaseHeaders
+        });
+
+        if (txRes.ok) {
+          const cloudTxs = await txRes.json();
+          transactions = cloudTxs || [];
+          localStorage.setItem('wn_transactions_backup', JSON.stringify(transactions));
+          document.getElementById('sqlSetupAlert').classList.add('hidden');
+        } else if (txRes.status === 404 || txRes.status === 400) {
+          // Table doesn't exist yet
+          document.getElementById('sqlSetupAlert').classList.remove('hidden');
+        }
+
+      } catch (err) {
+        console.warn("Cloud sync offline or network issue, using cached data:", err);
+      } finally {
+        if (syncIcon) {
+          setTimeout(() => syncIcon.classList.remove('fa-spin'), 400);
+        }
+        filterCategoryDropdownByType();
+        renderCategoryModalItems();
+        renderDashboard();
+      }
+    }
+
+    function loadLocalState() {
+      try {
+        const cachedCats = localStorage.getItem('wn_categories_backup');
+        categories = cachedCats ? JSON.parse(cachedCats) : defaultCategories;
+
+        const cachedTxs = localStorage.getItem('wn_transactions_backup');
+        transactions = cachedTxs ? JSON.parse(cachedTxs) : [];
+      } catch (e) {
         categories = defaultCategories;
         transactions = [];
       }
-
-      if (syncIcon) syncIcon.classList.remove('fa-spin');
-
-      // Database alert display
-      const dbAlert = document.getElementById('dbSetupAlert');
-      if (dbAlert) {
-        if (tableMissing) dbAlert.classList.remove('hidden');
-        else dbAlert.classList.add('hidden');
-      }
-
       filterCategoryDropdownByType();
-      renderCategoryModalItems();
       renderDashboard();
-
-      if (showSyncToast) showToast("Synced latest ledger from cloud!", "success");
     }
 
-    // --- SAVE TRANSACTION TO CLOUD ---
+    // --- 3. SAVE TRANSACTION ---
     async function handleSaveTransaction() {
-      const type = document.querySelector('input[name="entryType"]:checked')?.value || 'expense';
+      const type = document.querySelector('input[name="entryType"]:checked').value;
       const date = document.getElementById('entryDate').value;
       const amount = parseFloat(document.getElementById('entryAmount').value);
       const category = document.getElementById('entryCategory').value;
@@ -766,81 +681,76 @@
 
       const btn = document.getElementById('btnSaveTx');
       const btnText = document.getElementById('btnSaveTxText');
-      if (btn) btn.disabled = true;
-      if (btnText) btnText.textContent = "Saving to cloud...";
+      btn.disabled = true;
+      btnText.textContent = "Saving to cloud...";
 
-      initSupabaseClient();
+      const newTx = {
+        date,
+        type,
+        category,
+        description,
+        amount,
+        receipt_url: receiptUrl
+      };
 
       try {
-        if (supabase) {
-          const { data, error } = await supabase
-            .from('transactions')
-            .insert([{
-              date,
-              type,
-              category,
-              description,
-              amount,
-              receipt_url: receiptUrl
-            }])
-            .select();
+        const res = await fetch(`${SUPABASE_BASE}/transactions`, {
+          method: 'POST',
+          headers: supabaseHeaders,
+          body: JSON.stringify(newTx)
+        });
 
-          if (error) throw error;
-          if (data && data[0]) transactions.unshift(data[0]);
+        if (res.ok) {
+          const saved = await res.json();
+          transactions.unshift(saved[0] || { ...newTx, id: 'tx-' + Date.now() });
+          showToast("Saved to cloud!", "success");
         } else {
-          transactions.unshift({
-            id: 'local-' + Date.now(),
-            date,
-            type,
-            category,
-            description,
-            amount,
-            receipt_url: receiptUrl
-          });
+          // Save locally as fallback
+          newTx.id = 'loc-' + Date.now();
+          transactions.unshift(newTx);
+          document.getElementById('sqlSetupAlert').classList.remove('hidden');
+          showToast("Saved locally (Run SQL setup in Supabase to sync).", "info");
         }
-
+      } catch (err) {
+        newTx.id = 'loc-' + Date.now();
+        transactions.unshift(newTx);
+        showToast("Saved locally (Offline mode).", "info");
+      } finally {
+        localStorage.setItem('wn_transactions_backup', JSON.stringify(transactions));
+        btn.disabled = false;
+        btnText.textContent = "Save Transaction";
         closeTransactionModal();
         renderDashboard();
-        
-        // Reset form
+
+        // Reset
         document.getElementById('entryAmount').value = '';
         document.getElementById('entryDescription').value = '';
         document.getElementById('entryReceiptUrl').value = '';
-        document.getElementById('entryDate').value = new Date().toISOString().split('T')[0];
-
-        showToast("Entry saved & synced across devices!", "success");
-      } catch (err) {
-        console.error("Save error:", err);
-        showToast("Failed to save: " + err.message, "error");
-        const alertEl = document.getElementById('dbSetupAlert');
-        if (alertEl) alertEl.classList.remove('hidden');
-      } finally {
-        if (btn) btn.disabled = false;
-        if (btnText) btnText.textContent = "Save to Cloud";
       }
     }
 
-    // --- DELETE TRANSACTION ---
+    // --- 4. DELETE TRANSACTION ---
     async function deleteTransaction(id) {
       if (!confirm("Are you sure you want to delete this transaction?")) return;
 
-      initSupabaseClient();
       try {
-        if (supabase && !id.startsWith('local-')) {
-          const { error } = await supabase.from('transactions').delete().eq('id', id);
-          if (error) throw error;
+        if (!String(id).startsWith('loc-')) {
+          await fetch(`${SUPABASE_BASE}/transactions?id=eq.${id}`, {
+            method: 'DELETE',
+            headers: supabaseHeaders
+          });
         }
-
-        transactions = transactions.filter(t => t.id !== id);
-        renderDashboard();
-        showToast("Transaction removed from cloud.", "info");
       } catch (err) {
-        console.error("Delete error:", err);
-        showToast("Failed to delete: " + err.message, "error");
+        console.error("Delete sync error:", err);
       }
+
+      transactions = transactions.filter(t => t.id !== id);
+      localStorage.setItem('wn_transactions_backup', JSON.stringify(transactions));
+      renderDashboard();
+      showToast("Transaction removed.", "info");
     }
 
-    // --- CATEGORY MANAGEMENT ---
+    // --- 5. CATEGORY MANAGEMENT ---
     async function handleAddCategory() {
       const name = document.getElementById('newCatName').value.trim();
       const type = document.getElementById('newCatType').value;
@@ -853,31 +763,31 @@
         return;
       }
 
-      initSupabaseClient();
+      const newCat = { name, type, color };
 
       try {
-        if (supabase) {
-          const { data, error } = await supabase
-            .from('categories')
-            .insert([{ name, type, color }])
-            .select();
+        const res = await fetch(`${SUPABASE_BASE}/categories`, {
+          method: 'POST',
+          headers: supabaseHeaders,
+          body: JSON.stringify(newCat)
+        });
 
-          if (error) throw error;
-          if (data && data[0]) categories.push(data[0]);
-          else categories.push({ id: 'cat-' + Date.now(), name, type, color });
+        if (res.ok) {
+          const saved = await res.json();
+          categories.push(saved[0] || { ...newCat, id: 'cat-' + Date.now() });
         } else {
-          categories.push({ id: 'cat-' + Date.now(), name, type, color });
+          categories.push({ ...newCat, id: 'cat-' + Date.now() });
         }
-
-        document.getElementById('newCatName').value = '';
-        filterCategoryDropdownByType();
-        renderCategoryModalItems();
-        renderDashboard();
-        showToast(`Category "${name}" created!`, "success");
-      } catch (err) {
-        console.error("Category add error:", err);
-        showToast("Could not create category: " + err.message, "error");
+      } catch (e) {
+        categories.push({ ...newCat, id: 'cat-' + Date.now() });
       }
+
+      localStorage.setItem('wn_categories_backup', JSON.stringify(categories));
+      document.getElementById('newCatName').value = '';
+      filterCategoryDropdownByType();
+      renderCategoryModalItems();
+      renderDashboard();
+      showToast(`Category "${name}" created!`, "success");
     }
 
     async function deleteCategory(catId) {
@@ -889,28 +799,23 @@
         return;
       }
 
-      initSupabaseClient();
-
       try {
-        if (supabase && !catId.startsWith('cat-') && !catId.startsWith('def-')) {
-          const { error } = await supabase.from('categories').delete().eq('id', catId);
-          if (error) throw error;
-        }
+        await fetch(`${SUPABASE_BASE}/categories?id=eq.${catId}`, {
+          method: 'DELETE',
+          headers: supabaseHeaders
+        });
+      } catch (e) {}
 
-        categories = categories.filter(c => c.id !== catId);
-        filterCategoryDropdownByType();
-        renderCategoryModalItems();
-        renderDashboard();
-        showToast(`Category "${cat.name}" deleted.`, "info");
-      } catch (err) {
-        console.error("Delete category error:", err);
-        showToast("Failed to delete category: " + err.message, "error");
-      }
+      categories = categories.filter(c => c.id !== catId);
+      localStorage.setItem('wn_categories_backup', JSON.stringify(categories));
+      filterCategoryDropdownByType();
+      renderCategoryModalItems();
+      renderDashboard();
+      showToast(`Category "${cat.name}" deleted.`, "info");
     }
 
     function renderCategoryModalItems() {
       const container = document.getElementById('categoryItemsContainer');
-      if (!container) return;
       container.innerHTML = '';
 
       categories.forEach(cat => {
@@ -926,7 +831,7 @@
             </span>
           </div>
           <div class="flex items-center gap-2 flex-shrink-0">
-            <span class="text-[10px] text-slate-500">${usageCount} entries</span>
+            <span class="text-[10px] text-slate-500">${usageCount} used</span>
             ${cat.id && !cat.id.startsWith('def-') ? `
               <button onclick="deleteCategory('${cat.id}')" class="text-slate-500 hover:text-rose-400 p-1.5 transition">
                 <i class="fas fa-trash-alt"></i>
@@ -941,7 +846,6 @@
     function filterCategoryDropdownByType() {
       const selectedType = document.querySelector('input[name="entryType"]:checked')?.value || 'expense';
       const select = document.getElementById('entryCategory');
-      if (!select) return;
       const matching = categories.filter(c => c.type === selectedType);
 
       select.innerHTML = '';
@@ -957,12 +861,10 @@
       }
     }
 
-    // --- FILTER TRANSACTIONS ---
+    // --- 6. FILTERING & DASHBOARD DISPLAY ---
     function getFilteredEntries() {
-      const timeEl = document.getElementById('timeFilter');
-      const searchEl = document.getElementById('ledgerSearchInput');
-      const time = timeEl ? timeEl.value : 'this_month';
-      const query = searchEl ? searchEl.value.toLowerCase().trim() : '';
+      const time = document.getElementById('timeFilter').value;
+      const query = document.getElementById('ledgerSearchInput').value.toLowerCase().trim();
 
       const today = new Date();
       const thisYear = today.getFullYear();
@@ -973,7 +875,6 @@
         const tYear = txDate.getFullYear();
         const tMonth = txDate.getMonth();
 
-        // Time Filtering
         if (time === 'this_month') {
           if (tYear !== thisYear || tMonth !== thisMonth) return false;
         } else if (time === 'prev_month') {
@@ -982,7 +883,6 @@
           if (tYear !== prevYearTarget || tMonth !== prevMonth) return false;
         }
 
-        // Text Search
         if (query) {
           const matchDesc = (tx.description || '').toLowerCase().includes(query);
           const matchCat = (tx.category || '').toLowerCase().includes(query);
@@ -994,59 +894,42 @@
       });
     }
 
-    // --- DASHBOARD & ANALYTICS RENDERING ---
     function renderDashboard() {
       const entries = getFilteredEntries();
 
-      // Financial Totals
       const totalIncome = entries.filter(t => t.type === 'income').reduce((acc, t) => acc + Number(t.amount), 0);
       const totalExpense = entries.filter(t => t.type === 'expense').reduce((acc, t) => acc + Number(t.amount), 0);
       const netProfit = totalIncome - totalExpense;
       const margin = totalIncome > 0 ? Math.max(0, Math.round((netProfit / totalIncome) * 100)) : 0;
 
-      // Metric 1: Income
-      const metricIncome = document.getElementById('metricIncome');
-      const metricIncomeCount = document.getElementById('metricIncomeCount');
-      if (metricIncome) metricIncome.textContent = currencyFmt.format(totalIncome);
-      if (metricIncomeCount) metricIncomeCount.textContent = `${entries.filter(t => t.type === 'income').length} deposits`;
+      // KPIs
+      document.getElementById('metricIncome').textContent = currencyFmt.format(totalIncome);
+      document.getElementById('metricIncomeCount').textContent = `${entries.filter(t => t.type === 'income').length} deposits`;
 
-      // Metric 2: Expenses
-      const metricExpense = document.getElementById('metricExpense');
-      const metricExpenseCount = document.getElementById('metricExpenseCount');
-      if (metricExpense) metricExpense.textContent = currencyFmt.format(totalExpense);
-      if (metricExpenseCount) metricExpenseCount.textContent = `${entries.filter(t => t.type === 'expense').length} expenses`;
+      document.getElementById('metricExpense').textContent = currencyFmt.format(totalExpense);
+      document.getElementById('metricExpenseCount').textContent = `${entries.filter(t => t.type === 'expense').length} payments`;
 
-      // Metric 3: Net Profit
       const netEl = document.getElementById('metricNet');
       const netStatus = document.getElementById('metricNetStatus');
-      if (netEl) {
-        netEl.textContent = `${netProfit >= 0 ? '' : '-'}${currencyFmt.format(Math.abs(netProfit))}`;
-        if (netProfit >= 0) {
-          netEl.className = 'text-lg sm:text-2xl font-black text-emerald-400 truncate';
-          if (netStatus) {
-            netStatus.textContent = 'Net Surplus';
-            netStatus.className = 'text-[11px] text-emerald-400 font-bold mt-0.5 truncate';
-          }
-        } else {
-          netEl.className = 'text-lg sm:text-2xl font-black text-rose-400 truncate';
-          if (netStatus) {
-            netStatus.textContent = 'Net Deficit';
-            netStatus.className = 'text-[11px] text-rose-400 font-bold mt-0.5 truncate';
-          }
-        }
+      netEl.textContent = `${netProfit >= 0 ? '' : '-'}${currencyFmt.format(Math.abs(netProfit))}`;
+      if (netProfit >= 0) {
+        netEl.className = 'text-lg sm:text-2xl font-black text-emerald-400 truncate';
+        netStatus.textContent = 'Net Surplus';
+        netStatus.className = 'text-[11px] text-emerald-400 font-bold mt-0.5 truncate';
+      } else {
+        netEl.className = 'text-lg sm:text-2xl font-black text-rose-400 truncate';
+        netStatus.textContent = 'Net Deficit';
+        netStatus.className = 'text-[11px] text-rose-400 font-bold mt-0.5 truncate';
       }
 
-      // Metric 4: Margin
-      const metricMargin = document.getElementById('metricMargin');
-      const metricMarginBar = document.getElementById('metricMarginBar');
-      if (metricMargin) metricMargin.textContent = `${margin}%`;
-      if (metricMarginBar) metricMarginBar.style.width = `${Math.min(100, Math.max(0, margin))}%`;
+      document.getElementById('metricMargin').textContent = `${margin}%`;
+      document.getElementById('metricMarginBar').style.width = `${Math.min(100, Math.max(0, margin))}%`;
 
-      // Peak Spending Analysis
+      // Peak Spending Day Alert
       analyzePeakSpending(entries);
 
-      // Render Ledger Table & Cards
-      renderLedger();
+      // Render Ledger
+      renderLedger(entries);
 
       // Render Charts
       renderCharts(entries);
@@ -1057,8 +940,6 @@
       const banner = document.getElementById('peakSpendingBanner');
       const bannerText = document.getElementById('peakSpendingText');
       const bannerBadge = document.getElementById('peakPeriodBadge');
-
-      if (!banner) return;
 
       if (expenses.length === 0) {
         banner.classList.add('hidden');
@@ -1079,50 +960,37 @@
         }
       }
 
-      if (peakDate) {
+      if (peakDate && maxTotal > 0) {
         const peakFormatted = new Date(peakDate + 'T00:00:00').toLocaleDateString('en-US', {
           month: 'short', day: 'numeric', year: 'numeric'
         });
         const topCategory = expenses.filter(e => e.date === peakDate).sort((a, b) => b.amount - a.amount)[0]?.category || 'General';
 
-        if (bannerText) {
-          bannerText.innerHTML = `You spent the most money on <strong class="text-rose-400 font-bold">${peakFormatted}</strong> totaling <strong class="text-white font-black">${currencyFmt.format(maxTotal)}</strong> (Primary category: <em class="text-rose-300">${topCategory}</em>).`;
-        }
-        if (bannerBadge) {
-          bannerBadge.textContent = `Peak: ${currencyFmt.format(maxTotal)}`;
-        }
+        bannerText.innerHTML = `You spent the most money on <strong class="text-rose-400 font-bold">${peakFormatted}</strong> totaling <strong class="text-white font-black">${currencyFmt.format(maxTotal)}</strong> (Major: <em class="text-rose-300">${topCategory}</em>).`;
+        bannerBadge.textContent = `Peak: ${currencyFmt.format(maxTotal)}`;
         banner.classList.remove('hidden');
       } else {
         banner.classList.add('hidden');
       }
     }
 
-    function renderLedger() {
-      const entries = getFilteredEntries();
+    function renderLedger(entries) {
       const mobileList = document.getElementById('mobileLedgerList');
       const desktopTbody = document.getElementById('desktopLedgerBody');
       const emptyView = document.getElementById('emptyLedgerView');
       const countIndicator = document.getElementById('ledgerCountIndicator');
 
-      if (!mobileList || !desktopTbody) return;
-
       mobileList.innerHTML = '';
       desktopTbody.innerHTML = '';
-      if (countIndicator) {
-        countIndicator.textContent = `Showing ${entries.length} record${entries.length === 1 ? '' : 's'}`;
-      }
+      countIndicator.textContent = `Showing ${entries.length} record${entries.length === 1 ? '' : 's'}`;
 
       if (entries.length === 0) {
-        if (emptyView) {
-          emptyView.classList.remove('hidden');
-          emptyView.classList.add('flex');
-        }
+        emptyView.classList.remove('hidden');
+        emptyView.classList.add('flex');
         return;
       }
-      if (emptyView) {
-        emptyView.classList.add('hidden');
-        emptyView.classList.remove('flex');
-      }
+      emptyView.classList.add('hidden');
+      emptyView.classList.remove('flex');
 
       entries.forEach(item => {
         const cat = categories.find(c => c.name === item.category) || { color: '#64748b' };
@@ -1226,17 +1094,16 @@
       const expenseData = uniqueDates.map(d => expByDate[d] || 0);
       const incomeData = uniqueDates.map(d => incByDate[d] || 0);
 
-      const chartCanvas = document.getElementById('trendChart');
-      if (chartCanvas) {
-        if (trendChart) trendChart.destroy();
-        const ctxTrend = chartCanvas.getContext('2d');
+      if (trendChart) trendChart.destroy();
+      const ctxTrend = document.getElementById('trendChart')?.getContext('2d');
+      if (ctxTrend) {
         trendChart = new Chart(ctxTrend, {
           type: 'line',
           data: {
             labels: dateLabels.length ? dateLabels : ['No Data'],
             datasets: [
               {
-                label: 'Expenses',
+                label: 'Expense',
                 data: expenseData.length ? expenseData : [0],
                 borderColor: '#f43f5e',
                 backgroundColor: 'rgba(244, 63, 94, 0.12)',
@@ -1244,10 +1111,8 @@
                 fill: true,
                 tension: 0.35,
                 pointRadius: 4,
-                pointHoverRadius: 6,
                 pointBackgroundColor: '#0f172a',
-                pointBorderColor: '#f43f5e',
-                pointBorderWidth: 2
+                pointBorderColor: '#f43f5e'
               },
               {
                 label: 'Income',
@@ -1264,7 +1129,6 @@
           options: {
             responsive: true,
             maintainAspectRatio: false,
-            interaction: { mode: 'index', intersect: false },
             plugins: {
               legend: { display: false },
               tooltip: {
@@ -1306,10 +1170,9 @@
         return found ? found.color : '#64748b';
       });
 
-      const catCanvas = document.getElementById('categoryChart');
-      if (catCanvas) {
-        if (categoryChart) categoryChart.destroy();
-        const ctxCat = catCanvas.getContext('2d');
+      if (categoryChart) categoryChart.destroy();
+      const ctxCat = document.getElementById('categoryChart')?.getContext('2d');
+      if (ctxCat) {
         categoryChart = new Chart(ctxCat, {
           type: 'doughnut',
           data: {
@@ -1338,30 +1201,28 @@
         });
       }
 
-      // Category Legend Box
+      // Legend
       const legendBox = document.getElementById('categoryLegend');
-      if (legendBox) {
-        legendBox.innerHTML = '';
-        if (catLabels.length === 0) {
-          legendBox.innerHTML = `<p class="text-slate-500 italic text-center py-2 text-[11px]">No expense categories recorded</p>`;
-        } else {
-          catLabels.forEach((name, i) => {
-            const row = document.createElement('div');
-            row.className = 'flex items-center justify-between py-1 border-b border-slate-800/60';
-            row.innerHTML = `
-              <div class="flex items-center gap-2 truncate">
-                <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background-color: ${catColors[i]}"></span>
-                <span class="truncate font-semibold text-slate-300">${escapeHtml(name)}</span>
-              </div>
-              <span class="font-bold text-white ml-2 flex-shrink-0">${currencyFmt.format(catValues[i])}</span>
-            `;
-            legendBox.appendChild(row);
-          });
-        }
+      legendBox.innerHTML = '';
+      if (catLabels.length === 0) {
+        legendBox.innerHTML = `<p class="text-slate-500 italic text-center py-2 text-[11px]">No expense categories recorded</p>`;
+      } else {
+        catLabels.forEach((name, i) => {
+          const row = document.createElement('div');
+          row.className = 'flex items-center justify-between py-1 border-b border-slate-800/60';
+          row.innerHTML = `
+            <div class="flex items-center gap-2 truncate">
+              <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background-color: ${catColors[i]}"></span>
+              <span class="truncate font-semibold text-slate-300">${escapeHtml(name)}</span>
+            </div>
+            <span class="font-bold text-white ml-2 flex-shrink-0">${currencyFmt.format(catValues[i])}</span>
+          `;
+          legendBox.appendChild(row);
+        });
       }
     }
 
-    // --- CSV EXPORT ---
+    // --- 7. CSV EXPORT ---
     function exportToCSV() {
       const entries = getFilteredEntries();
       if (entries.length === 0) {
@@ -1389,12 +1250,12 @@
       link.click();
       document.body.removeChild(link);
 
-      showToast("CSV ledger exported successfully!", "success");
+      showToast("CSV ledger exported!", "success");
     }
 
-    // 1-Click SQL Setup Helper
-    function copySqlSetupCode() {
-      const sql = `-- Run this in Supabase SQL Editor:
+    // --- 8. COPY SQL SETUP QUERY ---
+    function copySqlSetup() {
+      const sql = `-- Run this in your Supabase SQL Editor once:
 create table if not exists public.transactions (
   id uuid default gen_random_uuid() primary key,
   date date not null,
@@ -1414,16 +1275,13 @@ create table if not exists public.categories (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
-alter table public.transactions drop column if exists user_id cascade;
-alter table public.categories drop column if exists user_id cascade;
-
 alter table public.transactions disable row level security;
 alter table public.categories disable row level security;`;
 
       navigator.clipboard.writeText(sql).then(() => {
-        showToast("SQL script copied! Paste it into Supabase SQL Editor and click Run.", "success");
+        showToast("SQL copied! Paste and run it in Supabase SQL editor.", "success");
       }).catch(() => {
-        prompt("Copy SQL setup script manually:", sql);
+        prompt("Copy this SQL code and run it in Supabase:", sql);
       });
     }
 
@@ -1445,24 +1303,23 @@ alter table public.categories disable row level security;`;
       filterCategoryDropdownByType();
     }
 
-    // Toast Notifications
+    // Notifications Toast
     function showToast(message, type = "info") {
       const toast = document.getElementById('toast');
       const msgEl = document.getElementById('toastMessage');
       const iconEl = document.getElementById('toastIcon');
-      if (!toast || !msgEl) return;
 
       msgEl.textContent = message;
 
       if (type === 'error') {
         toast.className = 'fixed top-5 right-5 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-2xl border text-xs sm:text-sm font-semibold transition-all transform duration-300 translate-y-0 opacity-100 bg-rose-950 border-rose-800 text-rose-200';
-        if (iconEl) iconEl.className = 'fas fa-circle-exclamation text-rose-400';
+        iconEl.className = 'fas fa-circle-exclamation text-rose-400';
       } else if (type === 'success') {
         toast.className = 'fixed top-5 right-5 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-2xl border text-xs sm:text-sm font-semibold transition-all transform duration-300 translate-y-0 opacity-100 bg-emerald-950 border-emerald-800 text-emerald-200';
-        if (iconEl) iconEl.className = 'fas fa-circle-check text-emerald-400';
+        iconEl.className = 'fas fa-circle-check text-emerald-400';
       } else {
         toast.className = 'fixed top-5 right-5 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-2xl border text-xs sm:text-sm font-semibold transition-all transform duration-300 translate-y-0 opacity-100 bg-slate-900 border-slate-700 text-slate-100';
-        if (iconEl) iconEl.className = 'fas fa-info-circle text-indigo-400';
+        iconEl.className = 'fas fa-info-circle text-indigo-400';
       }
 
       setTimeout(() => {
