@@ -31,6 +31,14 @@
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
+  <!-- Mozilla PDF.js for Client-Side Receipt Text Extraction -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+  </script>
+
   <style>
     * { -webkit-tap-highlight-color: transparent; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #020617; color: #f8fafc; }
@@ -365,7 +373,7 @@
     </footer>
   </div>
 
-  <!-- ================= 3. TRANSACTION ENTRY MODAL ================= -->
+  <!-- ================= 3. TRANSACTION ENTRY MODAL WITH PDF RECEIPT AUTO-FILL ================= -->
   <div id="txModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="bg-slate-900 border border-slate-800 w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
       
@@ -382,6 +390,39 @@
       </div>
 
       <div class="p-5 overflow-y-auto space-y-4 flex-grow text-slate-200">
+
+        <!-- ================= PDF & RECEIPT AUTO-FILL DROPZONE ================= -->
+        <div class="bg-slate-950/90 border border-dashed border-indigo-500/40 hover:border-indigo-500 rounded-2xl p-3.5 transition-colors text-center relative group">
+          <input type="file" id="receiptFileInput" accept=".pdf,image/*" onchange="handleReceiptFileUpload(event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+          
+          <div id="receiptUploadPrompt" class="space-y-1.5 pointer-events-none">
+            <div class="w-9 h-9 rounded-xl bg-indigo-950 text-indigo-400 border border-indigo-800/60 flex items-center justify-center mx-auto text-sm group-hover:scale-110 transition-transform">
+              <i class="fas fa-wand-magic-sparkles"></i>
+            </div>
+            <div>
+              <p class="text-xs font-bold text-slate-200">Upload PDF Receipt to Auto-Fill</p>
+              <p class="text-[11px] text-slate-400">Drag & drop or tap to select PDF / Image (Grabs Amount, Date & Merchant)</p>
+            </div>
+          </div>
+
+          <!-- Analysis Spinner -->
+          <div id="receiptAnalyzingState" class="hidden py-2 space-y-1 text-center">
+            <i class="fas fa-spinner fa-spin text-indigo-400 text-lg"></i>
+            <p class="text-xs font-semibold text-slate-300">Reading PDF & extracting invoice data...</p>
+          </div>
+
+          <!-- Successful Auto-fill Pill -->
+          <div id="receiptSuccessState" class="hidden p-2 rounded-xl bg-emerald-950/60 border border-emerald-800 text-emerald-300 text-[11px] flex items-center justify-between gap-2 text-left">
+            <div class="flex items-center gap-2 min-w-0">
+              <i class="fas fa-circle-check text-emerald-400 flex-shrink-0"></i>
+              <span id="receiptSuccessInfo" class="truncate font-semibold">Auto-filled from PDF</span>
+            </div>
+            <button type="button" onclick="clearUploadedReceipt(event)" class="z-20 text-slate-400 hover:text-rose-400 px-1 text-xs cursor-pointer" title="Remove receipt">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
+
         <!-- Type Selector -->
         <div>
           <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Transaction Type</label>
@@ -435,14 +476,17 @@
           <input type="text" id="entryDescription" placeholder="e.g. Grocery shopping, Software subscription, Salary" required class="w-full text-xs px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none min-h-[44px]">
         </div>
 
-        <!-- Receipt URL -->
+        <!-- Direct Receipt URL Option (Fallback/Manual) -->
         <div>
-          <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-            Receipt Image URL <span class="text-slate-500 font-normal lowercase">(optional)</span>
-          </label>
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Receipt Audit Link / Data
+            </label>
+            <span class="text-[10px] text-slate-500">(Auto-populated on upload)</span>
+          </div>
           <div class="relative">
             <i class="fas fa-paperclip absolute left-3 top-3 text-slate-500 text-xs"></i>
-            <input type="url" id="entryReceiptUrl" placeholder="https://example.com/receipt.jpg" class="w-full text-xs pl-8 pr-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none min-h-[44px]">
+            <input type="text" id="entryReceiptUrl" placeholder="File attached or paste URL" class="w-full text-xs pl-8 pr-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none min-h-[44px]">
           </div>
         </div>
 
@@ -517,7 +561,7 @@
     <span id="toastMessage">Notification</span>
   </div>
 
-  <!-- ================= 5. CORE LOGIC (PASSCODE & SUPABASE REST) ================= -->
+  <!-- ================= 5. CORE LOGIC (PASSCODE, PDF PARSING & SUPABASE REST) ================= -->
   <script>
     // Master Access Passcode
     const MASTER_PASSCODE = "888888";
@@ -587,7 +631,6 @@
       document.getElementById('appContainer').classList.remove('hidden');
       document.getElementById('entryDate').value = new Date().toISOString().split('T')[0];
       
-      // Load local memory first, then sync from Supabase
       loadLocalState();
       syncFromCloud();
     }
@@ -604,7 +647,206 @@
       }
     });
 
-    // --- 2. CLOUD DATABASE SYNC (VIA DIRECT REST API) ---
+    // --- 2. SMART PDF RECEIPT PARSING & AUTO-FILL ---
+    async function handleReceiptFileUpload(event) {
+      const file = event.target.files ? event.target.files[0] : null;
+      if (!file) return;
+
+      const promptBox = document.getElementById('receiptUploadPrompt');
+      const analyzingBox = document.getElementById('receiptAnalyzingState');
+      const successBox = document.getElementById('receiptSuccessState');
+      const successInfo = document.getElementById('receiptSuccessInfo');
+
+      promptBox.classList.add('hidden');
+      successBox.classList.add('hidden');
+      analyzingBox.classList.remove('hidden');
+
+      // Convert file to Base64 / DataURL for audit storage
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const fileDataUrl = e.target.result;
+        document.getElementById('entryReceiptUrl').value = fileDataUrl;
+
+        try {
+          if (file.type === 'application/pdf') {
+            await extractPdfTextAndAutofill(fileDataUrl, file.name);
+          } else {
+            // Image file: Auto-populate description with filename as fallback
+            const cleanName = file.name.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " ");
+            document.getElementById('entryDescription').value = cleanName;
+            showToast("Receipt image attached!", "info");
+          }
+
+          analyzingBox.classList.add('hidden');
+          successBox.classList.remove('hidden');
+          successInfo.textContent = `Attached: ${file.name}`;
+        } catch (err) {
+          console.error("PDF Parse error:", err);
+          analyzingBox.classList.add('hidden');
+          promptBox.classList.remove('hidden');
+          showToast("Could not auto-read text from PDF, but receipt is attached.", "info");
+        }
+      };
+
+      reader.readAsDataURL(file);
+    }
+
+    async function extractPdfTextAndAutofill(dataUrl, fileName) {
+      if (!window.pdfjsLib) {
+        throw new Error("PDF.js library not loaded");
+      }
+
+      const pdf = await pdfjsLib.getDocument({ url: dataUrl }).promise;
+      let fullText = "";
+
+      // Extract text from up to the first 2 pages
+      const maxPages = Math.min(pdf.numPages, 2);
+      for (let i = 1; i <= maxPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map(item => item.str).join(" ");
+        fullText += " " + pageText;
+      }
+
+      parseReceiptTextAndPopulateForm(fullText, fileName);
+    }
+
+    function parseReceiptTextAndPopulateForm(text, fallbackFileName) {
+      const cleanText = text.replace(/\s+/g, ' ').trim();
+      let detectedAmount = null;
+      let detectedDate = null;
+      let detectedMerchant = null;
+
+      // 1. EXTRACT AMOUNT
+      // A. Look for "Total", "Grand Total", "Amount Due", "Amount Paid"
+      const totalPatterns = [
+        /(?:grand\s*total|total\s*amount|total\s*due|amount\s*paid|total|amount)[\s\:\$RM€£MYR]*([0-9]{1,4}(?:[,\.][0-9]{2,3})*(?:\.[0-9]{2}))/i,
+        /(?:USD|MYR|RM|\$|€|£)\s*([0-9]{1,4}(?:[,\.][0-9]{2,3})*(?:\.[0-9]{2}))/i
+      ];
+
+      for (const pat of totalPatterns) {
+        const match = cleanText.match(pat);
+        if (match && match[1]) {
+          const rawAmt = match[1].replace(/,/g, '');
+          const val = parseFloat(rawAmt);
+          if (!isNaN(val) && val > 0 && val < 50000) {
+            detectedAmount = val;
+            break;
+          }
+        }
+      }
+
+      // Fallback: search all monetary values and pick largest realistic total
+      if (!detectedAmount) {
+        const allMoney = [...cleanText.matchAll(/(?:[\$RM€£MYR]\s*|\b)([0-9]{1,5}\.[0-9]{2})\b/g)];
+        if (allMoney.length > 0) {
+          const numbers = allMoney.map(m => parseFloat(m[1])).filter(n => !isNaN(n) && n > 0 && n < 50000);
+          if (numbers.length > 0) {
+            detectedAmount = Math.max(...numbers);
+          }
+        }
+      }
+
+      // 2. EXTRACT DATE
+      // Pattern 1: YYYY-MM-DD
+      const isoMatch = cleanText.match(/\b(202[0-9])[-/.](0[1-9]|1[0-2])[-/.](0[1-9]|[12][0-9]|3[01])\b/);
+      if (isoMatch) {
+        detectedDate = `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+      }
+
+      // Pattern 2: DD/MM/YYYY or MM/DD/YYYY
+      if (!detectedDate) {
+        const slashMatch = cleanText.match(/\b(0?[1-9]|[12][0-9]|3[01])[-/.](0?[1-9]|1[0-2])[-/.](202[0-9])\b/);
+        if (slashMatch) {
+          const d = String(slashMatch[1]).padStart(2, '0');
+          const m = String(slashMatch[2]).padStart(2, '0');
+          const y = slashMatch[3];
+          detectedDate = `${y}-${m}-${d}`;
+        }
+      }
+
+      // Pattern 3: Words like "15 Oct 2026" or "October 15, 2026"
+      if (!detectedDate) {
+        const wordMatch = cleanText.match(/\b(0?[1-9]|[12][0-9]|3[01])\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\s,]+(202[0-9])\b/i);
+        if (wordMatch) {
+          const parsed = new Date(`${wordMatch[2]} ${wordMatch[1]}, ${wordMatch[3]}`);
+          if (!isNaN(parsed)) {
+            detectedDate = parsed.toISOString().split('T')[0];
+          }
+        }
+      }
+
+      // 3. EXTRACT MERCHANT / DESCRIPTION
+      const knownBrands = [
+        "Grab", "Touch 'n Go", "Starbucks", "McDonald's", "KFC", "Apple", "Google",
+        "AWS", "Amazon", "Shopee", "Lazada", "AirAsia", "Netflix", "Spotify", "Uber",
+        "Shell", "Petronas", "Unifi", "Maxis", "Celcom", "Steam", "Adobe"
+      ];
+
+      for (const brand of knownBrands) {
+        if (new RegExp(`\\b${brand}\\b`, "i").test(cleanText)) {
+          detectedMerchant = brand;
+          break;
+        }
+      }
+
+      if (!detectedMerchant) {
+        // Grab first non-empty header word sequence from text
+        const words = cleanText.split(' ').slice(0, 6).join(' ');
+        if (words && words.length > 3) {
+          detectedMerchant = words.substring(0, 30);
+        } else {
+          detectedMerchant = fallbackFileName.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " ");
+        }
+      }
+
+      // 4. SMART CATEGORY MATCHING
+      let matchedCategory = null;
+      const lowerText = cleanText.toLowerCase();
+
+      if (lowerText.match(/food|mcdonald|starbucks|restaurant|cafe|dinner|lunch|grocery|supermarket|mart|bakery|grabfood/)) {
+        matchedCategory = "Food & Groceries";
+      } else if (lowerText.match(/grab|taxi|uber|flight|airasia|petronas|shell|fuel|petrol|parking|toll|train|commute|transport/)) {
+        matchedCategory = "Transportation";
+      } else if (lowerText.match(/apple|google|aws|software|netflix|spotify|adobe|domain|hosting|github|subscription|cloud/)) {
+        matchedCategory = "Software & Bills";
+      } else if (lowerText.match(/rent|housing|electric|water|telekom|wifi|internet|utility/)) {
+        matchedCategory = "Housing & Rent";
+      } else if (lowerText.match(/cinema|movie|game|steam|entertainment|concert/)) {
+        matchedCategory = "Entertainment";
+      }
+
+      // --- APPLY VALUES TO THE FORM ---
+      if (detectedAmount) {
+        document.getElementById('entryAmount').value = detectedAmount.toFixed(2);
+      }
+      if (detectedDate) {
+        document.getElementById('entryDate').value = detectedDate;
+      }
+      if (detectedMerchant) {
+        document.getElementById('entryDescription').value = detectedMerchant;
+      }
+      if (matchedCategory) {
+        const catSelect = document.getElementById('entryCategory');
+        const exists = Array.from(catSelect.options).some(o => o.value === matchedCategory);
+        if (exists) {
+          catSelect.value = matchedCategory;
+        }
+      }
+
+      showToast(`Auto-filled: $${detectedAmount || '0.00'} • ${detectedMerchant}`, "success");
+    }
+
+    function clearUploadedReceipt(event) {
+      if (event) event.stopPropagation();
+      document.getElementById('receiptFileInput').value = '';
+      document.getElementById('entryReceiptUrl').value = '';
+      document.getElementById('receiptUploadPrompt').classList.remove('hidden');
+      document.getElementById('receiptSuccessState').classList.add('hidden');
+      document.getElementById('receiptAnalyzingState').classList.add('hidden');
+    }
+
+    // --- 3. CLOUD DATABASE SYNC (VIA DIRECT REST API) ---
     async function syncFromCloud() {
       const syncIcon = document.getElementById('syncIcon');
       if (syncIcon) syncIcon.classList.add('fa-spin');
@@ -634,7 +876,6 @@
           localStorage.setItem('wn_transactions_backup', JSON.stringify(transactions));
           document.getElementById('sqlSetupAlert').classList.add('hidden');
         } else if (txRes.status === 404 || txRes.status === 400) {
-          // Table doesn't exist yet
           document.getElementById('sqlSetupAlert').classList.remove('hidden');
         }
 
@@ -665,7 +906,7 @@
       renderDashboard();
     }
 
-    // --- 3. SAVE TRANSACTION ---
+    // --- 4. SAVE TRANSACTION ---
     async function handleSaveTransaction() {
       const type = document.querySelector('input[name="entryType"]:checked').value;
       const date = document.getElementById('entryDate').value;
@@ -705,11 +946,10 @@
           transactions.unshift(saved[0] || { ...newTx, id: 'tx-' + Date.now() });
           showToast("Saved to cloud!", "success");
         } else {
-          // Save locally as fallback
           newTx.id = 'loc-' + Date.now();
           transactions.unshift(newTx);
           document.getElementById('sqlSetupAlert').classList.remove('hidden');
-          showToast("Saved locally (Run SQL setup in Supabase to sync).", "info");
+          showToast("Saved locally (Sync table setup needed).", "info");
         }
       } catch (err) {
         newTx.id = 'loc-' + Date.now();
@@ -722,14 +962,14 @@
         closeTransactionModal();
         renderDashboard();
 
-        // Reset
+        // Reset inputs
         document.getElementById('entryAmount').value = '';
         document.getElementById('entryDescription').value = '';
-        document.getElementById('entryReceiptUrl').value = '';
+        clearUploadedReceipt();
       }
     }
 
-    // --- 4. DELETE TRANSACTION ---
+    // --- 5. DELETE TRANSACTION ---
     async function deleteTransaction(id) {
       if (!confirm("Are you sure you want to delete this transaction?")) return;
 
@@ -750,7 +990,7 @@
       showToast("Transaction removed.", "info");
     }
 
-    // --- 5. CATEGORY MANAGEMENT ---
+    // --- 6. CATEGORY MANAGEMENT ---
     async function handleAddCategory() {
       const name = document.getElementById('newCatName').value.trim();
       const type = document.getElementById('newCatType').value;
@@ -861,7 +1101,7 @@
       }
     }
 
-    // --- 6. FILTERING & DASHBOARD DISPLAY ---
+    // --- 7. FILTERING & DASHBOARD DISPLAY ---
     function getFilteredEntries() {
       const time = document.getElementById('timeFilter').value;
       const query = document.getElementById('ledgerSearchInput').value.toLowerCase().trim();
@@ -1025,7 +1265,7 @@
             </span>
             <div class="flex items-center gap-1.5">
               ${item.receipt_url ? `
-                <a href="${item.receipt_url}" target="_blank" class="text-indigo-400 hover:text-indigo-300 p-1 text-xs" title="Receipt">
+                <a href="${item.receipt_url}" target="_blank" download="receipt" class="text-indigo-400 hover:text-indigo-300 p-1 text-xs" title="View Receipt">
                   <i class="fas fa-paperclip"></i>
                 </a>
               ` : ''}
@@ -1222,7 +1462,7 @@
       }
     }
 
-    // --- 7. CSV EXPORT ---
+    // --- 8. CSV EXPORT ---
     function exportToCSV() {
       const entries = getFilteredEntries();
       if (entries.length === 0) {
@@ -1253,7 +1493,7 @@
       showToast("CSV ledger exported!", "success");
     }
 
-    // --- 8. COPY SQL SETUP QUERY ---
+    // --- 9. COPY SQL SETUP QUERY ---
     function copySqlSetup() {
       const sql = `-- Run this in your Supabase SQL Editor once:
 create table if not exists public.transactions (
@@ -1289,6 +1529,7 @@ alter table public.categories disable row level security;`;
     function openTransactionModal() {
       document.getElementById('entryDate').value = new Date().toISOString().split('T')[0];
       filterCategoryDropdownByType();
+      clearUploadedReceipt();
       document.getElementById('txModal').classList.remove('hidden');
     }
     function closeTransactionModal() {
