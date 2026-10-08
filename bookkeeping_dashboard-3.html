@@ -1,0 +1,2029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>WN Money Tracker | Smart Accounting & Bookkeeping</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#0f172a',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <!-- Font Awesome 6 Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Font Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Touch target safeguards & mobile scroll optimizations */
+        * { -webkit-tap-highlight-color: transparent; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .touch-action-manipulation { touch-action: manipulation; }
+        body { font-family: 'Inter', sans-serif; background-color: #020617; color: #f8fafc; }
+        
+        /* Modal bottom sheet slide animations on mobile */
+        @media (max-width: 639px) {
+            .mobile-sheet {
+                border-bottom-left-radius: 0;
+                border-bottom-right-radius: 0;
+                border-top-left-radius: 1.5rem;
+                border-top-right-radius: 1.5rem;
+                max-height: 92vh;
+            }
+        }
+        /* Custom scrollbar for dark mode */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="text-slate-100 antialiased min-h-screen flex flex-col pb-24 md:pb-12 bg-slate-950 selection:bg-indigo-600 selection:text-white">
+
+    <!-- Navigation Header -->
+    <header class="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16 gap-2">
+                <!-- Brand -->
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 flex items-center justify-center shadow-md shadow-indigo-600/30 flex-shrink-0">
+                        <i class="fas fa-wallet text-white text-base"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h1 class="font-extrabold text-white tracking-tight text-base sm:text-lg">WN Money Tracker</h1>
+                            <span class="text-[10px] font-bold uppercase tracking-wider bg-indigo-950/80 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-800/60 hidden sm:inline-block">Dark CPA</span>
+                        </div>
+                        <p class="text-[11px] text-slate-400 hidden sm:block">Monthly Bookkeeping & Cashflow Management</p>
+                    </div>
+                </div>
+
+                <!-- Verified User / Email Indicator -->
+                <div class="flex items-center gap-2">
+                    <button onclick="openEmailVerifyModal()" class="h-10 px-3 bg-slate-800/90 hover:bg-slate-750 text-slate-200 border border-slate-700/80 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all shadow-xs active:scale-95" title="Switch or View Verified Account">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <div class="flex flex-col text-left">
+                            <span class="text-[10px] text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                                <i class="fas fa-circle-check text-[9px]"></i> Verified
+                            </span>
+                            <span id="active-user-email-display" class="font-bold text-slate-200 max-w-[110px] sm:max-w-[160px] truncate">user@wnmoneytracker.com</span>
+                        </div>
+                        <i class="fas fa-chevron-down text-[9px] text-slate-400 ml-0.5"></i>
+                    </button>
+
+                    <div class="relative">
+                        <select id="time-filter" class="h-10 text-xs sm:text-sm font-semibold bg-slate-800/90 hover:bg-slate-750 text-slate-200 border border-slate-700 rounded-xl px-3 pr-8 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all cursor-pointer">
+                            <option value="current-month" selected>This Month</option>
+                            <option value="prev-month">Previous Month</option>
+                            <option value="current-year">Year to Date</option>
+                            <option value="all">All Records</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-[10px] text-slate-400 pointer-events-none"></i>
+                    </div>
+
+                    <button onclick="openAIAdvisorModal()" class="h-10 px-3 bg-gradient-to-r from-indigo-950/70 to-violet-950/70 hover:from-indigo-900/80 hover:to-violet-900/80 text-indigo-300 border border-indigo-700/60 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs active:scale-95 touch-action-manipulation" title="Ask Gemini AI Accountant">
+                        <i class="fas fa-wand-magic-sparkles text-indigo-400"></i>
+                        <span class="hidden sm:inline">AI Advisor</span>
+                    </button>
+
+                    <button id="open-cat-btn" class="h-10 px-3 bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs active:scale-95 touch-action-manipulation" title="Manage Categories">
+                        <i class="fas fa-tags text-indigo-400"></i>
+                        <span class="hidden md:inline">Categories</span>
+                    </button>
+
+                    <button onclick="openTxModal()" class="hidden sm:inline-flex h-10 px-4 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white rounded-xl text-xs sm:text-sm font-semibold items-center gap-2 shadow-md shadow-indigo-600/30 transition-all">
+                        <i class="fas fa-plus"></i>
+                        <span>New Entry</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-7 flex-grow w-full space-y-6">
+
+        <!-- Peak Spending Alert Banner -->
+        <div id="peak-spending-banner" class="bg-gradient-to-r from-rose-950/40 via-amber-950/20 to-slate-900 border border-rose-900/50 p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-rose-600/80 text-white flex items-center justify-center flex-shrink-0 shadow-sm shadow-rose-600/30 border border-rose-500/40">
+                    <i class="fas fa-chart-line text-sm"></i>
+                </div>
+                <div>
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-rose-400">Peak Spending Insight</h3>
+                    <p id="peak-spending-text" class="text-xs sm:text-sm text-slate-300 font-normal mt-0.5">Analyzing current transactions...</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 self-end sm:self-center">
+                <span id="peak-period-badge" class="px-3 py-1 bg-slate-800 text-rose-300 font-bold text-xs rounded-lg border border-rose-800/60 shadow-xs">Calculating...</span>
+            </div>
+        </div>
+
+        <!-- KPI Cards Grid (Mobile 2 cols, Desktop 4 cols) -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
+            <!-- Total Inflow -->
+            <div class="bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-800/90 shadow-sm hover:border-slate-700 transition">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">Total Income</span>
+                    <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 flex items-center justify-center text-xs">
+                        <i class="fas fa-arrow-down"></i>
+                    </span>
+                </div>
+                <div class="mt-2 sm:mt-3">
+                    <h4 id="kpi-income" class="text-lg sm:text-2xl font-black text-white truncate">$0.00</h4>
+                    <p id="kpi-income-sub" class="text-[11px] text-emerald-400 font-semibold mt-0.5 sm:mt-1 truncate">0 entries</p>
+                </div>
+            </div>
+
+            <!-- Total Outflow -->
+            <div class="bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-800/90 shadow-sm hover:border-slate-700 transition">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">Expenses</span>
+                    <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-rose-950/80 text-rose-400 border border-rose-800/60 flex items-center justify-center text-xs">
+                        <i class="fas fa-arrow-up"></i>
+                    </span>
+                </div>
+                <div class="mt-2 sm:mt-3">
+                    <h4 id="kpi-expense" class="text-lg sm:text-2xl font-black text-white truncate">$0.00</h4>
+                    <p id="kpi-expense-sub" class="text-[11px] text-rose-400 font-semibold mt-0.5 sm:mt-1 truncate">0 entries</p>
+                </div>
+            </div>
+
+            <!-- Net Balance -->
+            <div class="bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-800/90 shadow-sm hover:border-slate-700 transition">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">Net Profit</span>
+                    <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-indigo-950/80 text-indigo-400 border border-indigo-800/60 flex items-center justify-center text-xs">
+                        <i class="fas fa-scale-balanced"></i>
+                    </span>
+                </div>
+                <div class="mt-2 sm:mt-3">
+                    <h4 id="kpi-net" class="text-lg sm:text-2xl font-black text-white truncate">$0.00</h4>
+                    <p id="kpi-net-status" class="text-[11px] text-slate-400 font-semibold mt-0.5 sm:mt-1 truncate">Balanced</p>
+                </div>
+            </div>
+
+            <!-- Savings Margin -->
+            <div class="bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-800/90 shadow-sm hover:border-slate-700 transition">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">Margin</span>
+                    <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-sky-950/80 text-sky-400 border border-sky-800/60 flex items-center justify-center text-xs">
+                        <i class="fas fa-percentage"></i>
+                    </span>
+                </div>
+                <div class="mt-2 sm:mt-3">
+                    <h4 id="kpi-margin" class="text-lg sm:text-2xl font-black text-white truncate">0%</h4>
+                    <div class="w-full bg-slate-800 rounded-full h-1.5 mt-2 overflow-hidden">
+                        <div id="kpi-margin-bar" class="bg-indigo-500 h-1.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Visual Analytics Grid (Line Timeline & Expense Breakdown) -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <!-- Spending & Income Trends Chart -->
+            <div class="lg:col-span-2 bg-slate-900 rounded-2xl p-4 sm:p-6 border border-slate-800/90 shadow-sm flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-3">
+                    <div>
+                        <h3 class="text-sm sm:text-base font-bold text-white">Cash Flow & Peak Spending Days</h3>
+                        <p class="text-xs text-slate-400">Daily spending spikes vs. income inflow</p>
+                    </div>
+                    <div class="flex items-center gap-3 text-xs font-medium">
+                        <span class="flex items-center gap-1.5 text-slate-300"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Outflow</span>
+                        <span class="flex items-center gap-1.5 text-slate-300"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> Inflow</span>
+                    </div>
+                </div>
+                <!-- Controlled responsive height container -->
+                <div class="relative w-full h-56 sm:h-72">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Expense Breakdown By Category -->
+            <div class="bg-slate-900 rounded-2xl p-4 sm:p-6 border border-slate-800/90 shadow-sm flex flex-col">
+                <div class="flex items-center justify-between mb-3">
+                    <div>
+                        <h3 class="text-sm sm:text-base font-bold text-white">Expense Breakdown</h3>
+                        <p class="text-xs text-slate-400">Category cost distribution</p>
+                    </div>
+                    <i class="fas fa-chart-pie text-slate-500 text-sm"></i>
+                </div>
+                <div class="relative w-full h-44 sm:h-52 flex items-center justify-center">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+                <!-- Dynamic Category Legend List -->
+                <div id="category-legend" class="mt-3 pt-3 border-t border-slate-800 max-h-36 overflow-y-auto divide-y divide-slate-800 text-xs">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Ledger / Transaction Section -->
+        <div class="bg-slate-900 rounded-2xl border border-slate-800/90 shadow-sm overflow-hidden">
+            <!-- Filter & Search Toolbar -->
+            <div class="p-4 sm:p-5 border-b border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div>
+                    <h3 class="text-sm sm:text-base font-bold text-white">Financial Ledger</h3>
+                    <p class="text-xs text-slate-400">All recorded transactions with audit documentation</p>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2">
+                    <!-- Search Input -->
+                    <div class="relative flex-grow sm:flex-grow-0 w-full sm:w-48">
+                        <i class="fas fa-search absolute left-3 top-2.5 text-xs text-slate-500"></i>
+                        <input type="text" id="ledger-search" placeholder="Search entries..." class="w-full text-xs pl-8 pr-3 py-2 bg-slate-800/90 border border-slate-700 text-slate-100 rounded-xl focus:bg-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none placeholder-slate-500">
+                    </div>
+
+                    <!-- Category Filter Dropdown -->
+                    <div class="relative flex-1 sm:flex-initial">
+                        <select id="category-filter" class="w-full text-xs bg-slate-800/90 border border-slate-700 text-slate-200 rounded-xl py-2 px-3 pr-7 focus:ring-2 focus:ring-indigo-500 focus:outline-none cursor-pointer">
+                            <option value="all">All Categories</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-2.5 top-3 text-[9px] text-slate-400 pointer-events-none"></i>
+                    </div>
+
+                    <!-- Export CSV Button -->
+                    <button onclick="exportToCSV()" class="h-9 px-3 bg-slate-800 hover:bg-slate-700 active:bg-slate-650 text-slate-200 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition touch-action-manipulation border border-slate-700" title="Export Ledger to CSV">
+                        <i class="fas fa-file-csv text-slate-400"></i>
+                        <span class="hidden sm:inline">Export</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 1. MOBILE VIEW: Card List Format (< 768px) -->
+            <div id="mobile-ledger-list" class="block md:hidden divide-y divide-slate-800">
+                <!-- Injected via renderTransactions() -->
+            </div>
+
+            <!-- 2. DESKTOP VIEW: Full Data Table (>= 768px) -->
+            <div class="hidden md:block overflow-x-auto">
+                <table class="w-full text-left text-xs text-slate-300">
+                    <thead class="bg-slate-800/50 text-slate-400 uppercase font-semibold text-[11px] border-b border-slate-800">
+                        <tr>
+                            <th class="px-5 py-3.5 cursor-pointer hover:text-white" onclick="toggleSort('date')">
+                                Date <i class="fas fa-sort text-[10px] ml-1"></i>
+                            </th>
+                            <th class="px-5 py-3.5">Description</th>
+                            <th class="px-5 py-3.5">Category</th>
+                            <th class="px-5 py-3.5 text-right cursor-pointer hover:text-white" onclick="toggleSort('amount')">
+                                Amount <i class="fas fa-sort text-[10px] ml-1"></i>
+                            </th>
+                            <th class="px-5 py-3.5 text-center">Receipt</th>
+                            <th class="px-5 py-3.5 text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="desktop-ledger-body" class="divide-y divide-slate-800">
+                        <!-- Injected via renderTransactions() -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Empty State Fallback -->
+            <div id="empty-ledger-view" class="hidden py-14 flex-col items-center justify-center text-center px-4">
+                <div class="w-12 h-12 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-500 mb-3">
+                    <i class="fas fa-receipt text-xl"></i>
+                </div>
+                <h4 class="text-sm font-bold text-slate-300">No Transactions Found</h4>
+                <p class="text-xs text-slate-500 mt-1 max-w-xs">No entries match your current search or month criteria.</p>
+                <button onclick="openTxModal()" class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-500">
+                    Add First Entry
+                </button>
+            </div>
+
+            <!-- Ledger Footer Counter -->
+            <div class="px-5 py-3 bg-slate-800/30 border-t border-slate-800 text-xs text-slate-400 flex items-center justify-between">
+                <span id="ledger-count-indicator">Showing 0 records</span>
+                <span class="text-[11px] text-slate-500 hidden sm:inline">Stored safely in browser storage</span>
+            </div>
+        </div>
+    </main>
+
+    <!-- Mobile Bottom App Bar (Sticky for single-thumb action) -->
+    <div class="fixed bottom-0 inset-x-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 py-2 px-6 flex sm:hidden items-center justify-around z-40 shadow-xl">
+        <button onclick="openCategoryModal()" class="flex flex-col items-center justify-center text-slate-400 hover:text-indigo-400 py-1 min-w-[50px] min-h-[44px]">
+            <i class="fas fa-tags text-base"></i>
+            <span class="text-[10px] font-medium mt-0.5">Categories</span>
+        </button>
+
+        <button onclick="openAIAdvisorModal()" class="flex flex-col items-center justify-center text-indigo-400 hover:text-indigo-300 py-1 min-w-[50px] min-h-[44px]">
+            <i class="fas fa-wand-magic-sparkles text-base"></i>
+            <span class="text-[10px] font-bold mt-0.5">AI CPA</span>
+        </button>
+
+        <!-- Primary Add Transaction Tap Target -->
+        <button onclick="openTxModal()" class="w-13 h-13 -mt-6 bg-gradient-to-tr from-indigo-600 to-indigo-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-indigo-600/50 active:scale-95 transition-transform min-w-[48px] min-h-[48px]" aria-label="Add Transaction">
+            <i class="fas fa-plus text-lg"></i>
+        </button>
+
+        <button onclick="exportToCSV()" class="flex flex-col items-center justify-center text-slate-400 hover:text-indigo-400 py-1 min-w-[50px] min-h-[44px]">
+            <i class="fas fa-download text-base"></i>
+            <span class="text-[10px] font-medium mt-0.5">Export</span>
+        </button>
+    </div>
+
+    <!-- MODAL 0: Email Verification & Account Separation Modal -->
+    <div id="email-verify-modal" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+            
+            <div class="px-5 py-4 bg-slate-950 text-white flex items-center justify-between border-b border-slate-800">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-600/30 text-indigo-400 border border-indigo-500/40 flex items-center justify-center text-xs">
+                        <i class="fas fa-envelope-circle-check"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold">Email Account Verification</h3>
+                        <p class="text-[10px] text-slate-400">Each email accesses its own dedicated ledger</p>
+                    </div>
+                </div>
+                <button onclick="closeEmailVerifyModal()" class="w-8 h-8 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 flex items-center justify-center text-sm">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="p-5 space-y-4">
+                <!-- Current Account Overview -->
+                <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between">
+                    <div class="min-w-0">
+                        <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">Currently Active Ledger:</span>
+                        <span id="current-verified-badge" class="font-bold text-emerald-400 text-xs truncate block">demo@wnmoneytracker.com</span>
+                    </div>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800/80">
+                        Active
+                    </span>
+                </div>
+
+                <!-- STEP 1: Enter Email -->
+                <div id="verify-step-email" class="space-y-3">
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-300">
+                        Sign In or Switch to Email Account
+                    </label>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Enter your work or personal email address. We will verify your email before syncing your private bookkeeping transactions.
+                    </p>
+                    <div>
+                        <div class="relative">
+                            <i class="fas fa-envelope absolute left-3 top-3 text-slate-500 text-xs"></i>
+                            <input type="email" id="input-verify-email" placeholder="e.g. yourname@company.com" class="w-full text-xs font-semibold pl-9 pr-3 py-2.5 bg-slate-800 border border-slate-700 text-white rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none min-h-[44px] placeholder-slate-500">
+                        </div>
+                    </div>
+                    <button type="button" onclick="sendVerificationCode()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-3 px-4 rounded-xl shadow-md shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 min-h-[44px]">
+                        <i class="fas fa-paper-plane text-xs"></i>
+                        <span>Send 6-Digit Verification Code</span>
+                    </button>
+                </div>
+
+                <!-- STEP 2: Enter 6-digit Verification PIN -->
+                <div id="verify-step-code" class="space-y-3 hidden">
+                    <div class="p-3 bg-indigo-950/40 border border-indigo-800/60 rounded-xl text-xs text-indigo-200">
+                        <p class="font-semibold flex items-center gap-1.5">
+                            <i class="fas fa-shield-halved text-indigo-400"></i> Code Sent!
+                        </p>
+                        <p class="text-[11px] text-slate-300 mt-1">
+                            A one-time passcode has been generated for <strong id="target-verify-email" class="text-white">user@example.com</strong>.
+                        </p>
+                        <p class="text-[10px] text-amber-300/90 mt-1.5 font-mono">
+                            Test Passcode: <span id="mock-code-hint" class="font-bold underline text-white"></span> (Simulated for this browser sandbox)
+                        </p>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1">Enter 6-Digit Verification PIN</label>
+                        <input type="text" id="input-verification-pin" maxlength="6" placeholder="123456" class="w-full text-center tracking-widest text-lg font-black py-2.5 bg-slate-800 border border-slate-700 text-white rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none min-h-[44px]">
+                    </div>
+
+                    <div class="flex gap-2">
+                        <button type="button" onclick="backToEmailStep()" class="w-1/3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs py-2.5 rounded-xl transition min-h-[44px]">
+                            Back
+                        </button>
+                        <button type="button" onclick="confirmVerificationCode()" class="w-2/3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/30 min-h-[44px]">
+                            <i class="fas fa-check"></i>
+                            <span>Verify & Load Ledger</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="px-5 py-3 bg-slate-950 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-500">
+                <span>Secure email-level partition</span>
+                <button type="button" onclick="closeEmailVerifyModal()" class="text-slate-400 hover:text-white font-semibold">
+                    Dismiss
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 1: Add Transaction Modal (Mobile Bottom Sheet / Desktop Centered) -->
+    <div id="tx-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="mobile-sheet bg-slate-900 border border-slate-800 w-full sm:max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+            
+            <!-- Modal Header -->
+            <div class="px-5 py-4 bg-slate-950 text-white flex items-center justify-between flex-shrink-0 border-b border-slate-800">
+                <div class="flex items-center gap-2">
+                    <span class="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-xs">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                    </span>
+                    <h3 class="text-sm sm:text-base font-bold">New Ledger Entry</h3>
+                </div>
+                <button onclick="closeTxModal()" class="w-8 h-8 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 flex items-center justify-center text-sm">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Modal Form Body -->
+            <form id="tx-form" class="p-5 overflow-y-auto space-y-4 flex-grow text-slate-200">
+                <!-- Type Toggle Pill -->
+                <div>
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Transaction Type</label>
+                    <div class="grid grid-cols-2 gap-2 p-1 bg-slate-950 rounded-xl border border-slate-800">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="entryType" value="expense" class="peer sr-only" checked onchange="handleTypeChange()">
+                            <div class="text-center py-2 rounded-lg font-bold text-xs text-slate-400 peer-checked:bg-slate-800 peer-checked:text-rose-400 peer-checked:border peer-checked:border-slate-700 peer-checked:shadow-xs transition-all flex items-center justify-center gap-1.5 min-h-[44px]">
+                                <i class="fas fa-arrow-up"></i> Expense (Outflow)
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="entryType" value="income" class="peer sr-only" onchange="handleTypeChange()">
+                            <div class="text-center py-2 rounded-lg font-bold text-xs text-slate-400 peer-checked:bg-slate-800 peer-checked:text-emerald-400 peer-checked:border peer-checked:border-slate-700 peer-checked:shadow-xs transition-all flex items-center justify-center gap-1.5 min-h-[44px]">
+                                <i class="fas fa-arrow-down"></i> Income (Inflow)
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Date & Amount -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Date *</label>
+                        <input type="date" id="entryDate" required class="w-full text-xs font-semibold px-3 py-2.5 bg-slate-800/90 border border-slate-700 rounded-xl text-white focus:bg-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none min-h-[44px]">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Amount ($) *</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-2.5 text-slate-500 font-bold text-xs">$</span>
+                            <input type="number" id="entryAmount" step="0.01" min="0.01" placeholder="0.00" required class="w-full text-xs font-bold pl-7 pr-3 py-2.5 bg-slate-800/90 border border-slate-700 rounded-xl text-white focus:bg-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none min-h-[44px] placeholder-slate-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category Field with Quick Add -->
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400">Category *</label>
+                        <button type="button" onclick="openCategoryModal()" class="text-xs text-indigo-400 font-semibold hover:text-indigo-300 flex items-center gap-1 py-1">
+                            <i class="fas fa-plus text-[10px]"></i> Add Category
+                        </button>
+                    </div>
+                    <div class="relative">
+                        <select id="entryCategory" required class="w-full text-xs font-semibold px-3 py-2.5 bg-slate-800/90 border border-slate-700 rounded-xl text-white focus:bg-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none pr-8 min-h-[44px] cursor-pointer">
+                            <!-- Populated dynamically -->
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-[10px] text-slate-400 pointer-events-none"></i>
+                    </div>
+                </div>
+
+                <!-- Description / Payee -->
+                <div>
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Description / Merchant / Source *</label>
+                    <input type="text" id="entryDescription" placeholder="e.g. AWS Cloud Services, Client Retainer, Office Supplies" required class="w-full text-xs px-3 py-2.5 bg-slate-800/90 border border-slate-700 rounded-xl text-white focus:bg-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none min-h-[44px] placeholder-slate-500">
+                </div>
+
+                <!-- Optional Receipt Attachment (Camera / File) -->
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400">Receipt Attachment</label>
+                        <span class="text-[10px] text-slate-500 uppercase font-semibold">Optional</span>
+                    </div>
+                    <div class="border-2 border-dashed border-slate-750 hover:border-indigo-500 rounded-xl p-3 text-center transition bg-slate-950/60">
+                        <input type="file" id="entryReceiptFile" accept="image/*,.pdf" capture="environment" class="hidden" onchange="handleReceiptFileSelect(event)">
+                        <div id="receipt-upload-placeholder" onclick="document.getElementById('entryReceiptFile').click()" class="cursor-pointer py-1">
+                            <i class="fas fa-camera text-indigo-400 text-lg mb-1"></i>
+                            <p class="text-xs font-semibold text-slate-300">Tap to upload receipt or snap photo</p>
+                            <p class="text-[10px] text-slate-500">Accepts PNG, JPG, or PDF</p>
+                        </div>
+                        <div id="receipt-upload-preview" class="hidden flex-col gap-2 bg-slate-800 p-2.5 rounded-lg border border-slate-700">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2 truncate">
+                                    <i class="fas fa-file-invoice text-indigo-400 text-base"></i>
+                                    <span id="receipt-file-name" class="text-xs font-semibold text-slate-200 truncate">receipt.jpg</span>
+                                </div>
+                                <button type="button" onclick="clearSelectedReceipt()" class="text-slate-400 hover:text-rose-400 text-xs px-2 py-1">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                            <!-- Gemini AI Auto-Scan Action Button -->
+                            <button type="button" id="ai-scan-btn" onclick="scanReceiptWithAI()" class="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-xs py-2 px-3 rounded-lg shadow-sm flex items-center justify-center gap-2 transition active:scale-98">
+                                <i class="fas fa-wand-magic-sparkles text-xs"></i>
+                                <span id="ai-scan-btn-text">Auto-Fill Form with Gemini AI</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Submit Button -->
+                <div class="pt-2">
+                    <button type="submit" id="save-tx-btn" class="w-full bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-bold text-xs sm:text-sm py-3 px-4 rounded-xl shadow-md shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 min-h-[46px]">
+                        <i class="fas fa-check"></i>
+                        <span>Save Transaction</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: Category Manager Modal -->
+    <div id="category-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="mobile-sheet bg-slate-900 border border-slate-800 w-full sm:max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+            <div class="px-5 py-4 bg-slate-950 text-white flex items-center justify-between flex-shrink-0 border-b border-slate-800">
+                <div class="flex items-center gap-2">
+                    <span class="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-xs">
+                        <i class="fas fa-tags"></i>
+                    </span>
+                    <h3 class="text-sm sm:text-base font-bold">Category Manager</h3>
+                </div>
+                <button onclick="closeCategoryModal()" class="w-8 h-8 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 flex items-center justify-center text-sm">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="p-5 overflow-y-auto space-y-4">
+                <!-- Add Category Sub-Form -->
+                <form id="add-category-form" class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl space-y-3">
+                    <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Create Custom Category</h4>
+                    <div class="grid grid-cols-3 gap-2">
+                        <input type="text" id="new-cat-name" placeholder="Name (e.g. Taxes)" required class="col-span-2 text-xs px-3 py-2 bg-slate-800 border border-slate-700 text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none min-h-[40px] placeholder-slate-500">
+                        <select id="new-cat-type" class="text-xs px-2 py-2 bg-slate-800 border border-slate-700 text-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none min-h-[40px]">
+                            <option value="expense">Expense</option>
+                            <option value="income">Income</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <label class="text-[11px] font-semibold text-slate-400">Color Tag:</label>
+                            <input type="color" id="new-cat-color" value="#6366f1" class="w-8 h-8 rounded-lg border border-slate-700 bg-slate-800 p-0.5 cursor-pointer">
+                        </div>
+                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-2 rounded-lg transition shadow-xs min-h-[40px] flex items-center gap-1.5">
+                            <i class="fas fa-plus"></i> Add Category
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Current Category Badge List -->
+                <div>
+                    <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Active Categories</h4>
+                    <div id="category-items-container" class="space-y-2 max-h-56 overflow-y-auto pr-1">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="px-5 py-3 bg-slate-950 border-t border-slate-800 text-right flex-shrink-0">
+                <button onclick="closeCategoryModal()" class="w-full sm:w-auto px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl min-h-[40px] border border-slate-700">
+                    Done
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: Receipt Lightbox Viewer -->
+    <div id="receipt-modal" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden">
+            <div class="px-4 py-3 bg-slate-950 text-white flex items-center justify-between border-b border-slate-800">
+                <div class="flex items-center gap-2 truncate">
+                    <i class="fas fa-paperclip text-indigo-400"></i>
+                    <span id="receipt-view-title" class="text-xs sm:text-sm font-bold truncate">Receipt Document</span>
+                </div>
+                <button onclick="closeReceiptModal()" class="text-slate-400 hover:text-white p-1 text-base">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="p-4 bg-slate-950 flex flex-col items-center justify-center">
+                <div id="receipt-view-body" class="max-h-[60vh] overflow-auto w-full flex items-center justify-center rounded-xl bg-slate-900 p-2 border border-slate-800">
+                    <!-- Dynamic Receipt Preview -->
+                </div>
+                <div class="w-full flex items-center justify-between mt-3 text-xs">
+                    <span id="receipt-view-meta" class="text-slate-400 font-medium">Digital Audit Trail</span>
+                    <a id="receipt-view-download" href="#" download="receipt" class="font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1.5 py-1">
+                        <i class="fas fa-download"></i> Save Copy
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: Gemini AI CPA Advisor & Audit Modal -->
+    <div id="ai-advisor-modal" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="mobile-sheet bg-slate-900 border border-slate-800 w-full sm:max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+            <div class="px-5 py-4 bg-gradient-to-r from-slate-950 via-indigo-950/60 to-slate-950 text-white flex items-center justify-between flex-shrink-0 border-b border-slate-800">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-300">
+                        <i class="fas fa-robot text-sm"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-sm sm:text-base font-bold">WN Money Tracker AI CPA Advisor</h3>
+                            <span class="text-[9px] font-bold uppercase tracking-wider bg-indigo-950 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-700/60">Gemini 3 Flash</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400">Intelligent bookkeeper audit, cash flow diagnostics & tax insights</p>
+                    </div>
+                </div>
+                <button onclick="closeAIAdvisorModal()" class="w-8 h-8 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 flex items-center justify-center text-sm">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="p-5 overflow-y-auto space-y-4 flex-grow text-xs text-slate-200">
+                <!-- Action Prompts Pill Group -->
+                <div>
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">Quick AI Diagnostic Audits</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <button onclick="runAIAudit('comprehensive')" class="p-2.5 bg-slate-950 hover:bg-indigo-950/50 border border-slate-800 hover:border-indigo-600/60 rounded-xl text-left transition flex flex-col justify-between group min-h-[56px]">
+                            <span class="font-bold text-slate-200 group-hover:text-indigo-300 flex items-center gap-1.5">
+                                <i class="fas fa-stethoscope text-indigo-400"></i> Full Health Audit
+                            </span>
+                            <span class="text-[10px] text-slate-500 mt-1">Review cash flow & risks</span>
+                        </button>
+                        <button onclick="runAIAudit('expenses')" class="p-2.5 bg-slate-950 hover:bg-rose-950/50 border border-slate-800 hover:border-rose-600/60 rounded-xl text-left transition flex flex-col justify-between group min-h-[56px]">
+                            <span class="font-bold text-slate-200 group-hover:text-rose-300 flex items-center gap-1.5">
+                                <i class="fas fa-scissors text-rose-400"></i> Cost Reduction
+                            </span>
+                            <span class="text-[10px] text-slate-500 mt-1">Pinpoint excessive spend</span>
+                        </button>
+                        <button onclick="runAIAudit('tax')" class="p-2.5 bg-slate-950 hover:bg-emerald-950/50 border border-slate-800 hover:border-emerald-600/60 rounded-xl text-left transition flex flex-col justify-between group min-h-[56px]">
+                            <span class="font-bold text-slate-200 group-hover:text-emerald-300 flex items-center gap-1.5">
+                                <i class="fas fa-receipt text-emerald-400"></i> Tax Write-Offs
+                            </span>
+                            <span class="text-[10px] text-slate-500 mt-1">Identify deductible items</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Custom Question Form -->
+                <div>
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Ask Any Financial or Bookkeeping Question</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="ai-custom-prompt" placeholder="e.g. How does my current savings margin compare to standard benchmarks?" class="flex-grow text-xs px-3 py-2.5 bg-slate-950 border border-slate-700 text-white rounded-xl focus:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none min-h-[44px] placeholder-slate-500">
+                        <button onclick="askCustomAIQuestion()" id="ai-submit-prompt-btn" class="px-4 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white rounded-xl font-bold flex items-center gap-1.5 transition flex-shrink-0 min-h-[44px]">
+                            <span>Ask</span>
+                            <i class="fas fa-paper-plane text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- AI Output Results Panel -->
+                <div class="border border-slate-800 rounded-xl bg-slate-950/90 p-4 min-h-[170px] relative">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span class="font-bold text-slate-200">CPA Executive Summary</span>
+                        </div>
+                        <span id="ai-model-tag" class="text-[10px] text-slate-500 font-mono">Gemini 3 Flash</span>
+                    </div>
+
+                    <!-- Loader State -->
+                    <div id="ai-advisor-loader" class="hidden py-8 flex-col items-center justify-center text-center space-y-3">
+                        <div class="w-8 h-8 border-3 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                        <p class="text-xs font-semibold text-slate-300">Analyzing financial ledger and metrics...</p>
+                        <p class="text-[10px] text-slate-500">Processing income, outflow velocity, and categories</p>
+                    </div>
+
+                    <!-- Response Text Container -->
+                    <div id="ai-advisor-content" class="text-slate-300 space-y-2.5 leading-relaxed text-xs">
+                        <p class="text-slate-500 italic">Select one of the diagnostic audits above or type a custom question. Gemini AI will inspect your recorded transactions and generate tailored bookkeeping advice.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="px-5 py-3 bg-slate-950 border-t border-slate-800 flex items-center justify-between flex-shrink-0">
+                <span class="text-[10px] text-slate-500">Ledger data is securely processed for analysis</span>
+                <button onclick="closeAIAdvisorModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl min-h-[38px] border border-slate-700">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- In-App Notification Toast (No alert() used) -->
+    <div id="toast" class="fixed top-5 right-5 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-2xl border text-xs sm:text-sm font-semibold transition-all transform duration-300 translate-y-[-20px] opacity-0 pointer-events-none">
+        <i id="toast-icon" class="fas fa-info-circle text-base"></i>
+        <span id="toast-message">Notification</span>
+    </div>
+
+    <script>
+        // Storage Keys Prefix
+        const ACTIVE_EMAIL_KEY = 'wn_money_tracker_active_verified_email';
+        const DEFAULT_DEMO_EMAIL = 'demo@wnmoneytracker.com';
+
+        let currentVerifiedEmail = DEFAULT_DEMO_EMAIL;
+        let generatedVerificationPin = null;
+        let pendingVerificationEmail = null;
+
+        // Default Categories
+        const DEFAULT_CATEGORIES = [
+            { id: 'cat-1', name: 'Housing & Utilities', type: 'expense', color: '#6366f1' },
+            { id: 'cat-2', name: 'Software & Cloud', type: 'expense', color: '#0ea5e9' },
+            { id: 'cat-3', name: 'Meals & Dining', type: 'expense', color: '#f43f5e' },
+            { id: 'cat-4', name: 'Travel & Commute', type: 'expense', color: '#f59e0b' },
+            { id: 'cat-5', name: 'Office & Supplies', type: 'expense', color: '#a855f7' },
+            { id: 'cat-6', name: 'Consulting & Sales', type: 'income', color: '#10b981' },
+            { id: 'cat-7', name: 'Salary & Payroll', type: 'income', color: '#059669' },
+            { id: 'cat-8', name: 'Dividends & Interest', type: 'income', color: '#34d399' }
+        ];
+
+        // Seed Sample Transactions for Initial Presentation
+        const currentYear = new Date().getFullYear();
+        const currentMonthNumber = String(new Date().getMonth() + 1).padStart(2, '0');
+
+        const DEFAULT_TRANSACTIONS = [
+            {
+                id: 1710000001,
+                date: `${currentYear}-${currentMonthNumber}-02`,
+                type: 'income',
+                category: 'Consulting & Sales',
+                description: 'Enterprise Retainer Billing',
+                amount: 4500.00,
+                receiptUrl: null,
+                receiptName: null
+            },
+            {
+                id: 1710000002,
+                date: `${currentYear}-${currentMonthNumber}-05`,
+                type: 'expense',
+                category: 'Software & Cloud',
+                description: 'AWS Web Services Hosting',
+                amount: 320.40,
+                receiptUrl: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&auto=format&fit=crop&q=80',
+                receiptName: 'aws_invoice_march.jpg'
+            },
+            {
+                id: 1710000003,
+                date: `${currentYear}-${currentMonthNumber}-09`,
+                type: 'expense',
+                category: 'Housing & Utilities',
+                description: 'Commercial Office Space Rent',
+                amount: 1450.00,
+                receiptUrl: null,
+                receiptName: null
+            },
+            {
+                id: 1710000004,
+                date: `${currentYear}-${currentMonthNumber}-14`,
+                type: 'expense',
+                category: 'Meals & Dining',
+                description: 'Client Acquisition Lunch',
+                amount: 185.00,
+                receiptUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&auto=format&fit=crop&q=80',
+                receiptName: 'bistro_receipt.jpg'
+            },
+            {
+                id: 1710000005,
+                date: `${currentYear}-${currentMonthNumber}-18`,
+                type: 'expense',
+                category: 'Travel & Commute',
+                description: 'Metropolitan Rail & Parking',
+                amount: 64.20,
+                receiptUrl: null,
+                receiptName: null
+            },
+            {
+                id: 1710000006,
+                date: `${currentYear}-${currentMonthNumber}-20`,
+                type: 'income',
+                category: 'Dividends & Interest',
+                amount: 230.15,
+                description: 'Treasury Yield Inflow',
+                receiptUrl: null,
+                receiptName: null
+            }
+        ];
+
+        // State variables
+        let transactions = [];
+        let categories = [];
+        let activeSort = { field: 'date', order: 'desc' };
+        let attachedReceiptDataUrl = null;
+        let attachedReceiptFileName = null;
+
+        // Chart References
+        let trendChart = null;
+        let categoryChart = null;
+
+        // Number Formatter
+        const currencyFmt = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 2
+        });
+
+        // Utility to compute safe storage keys per email
+        function getStorageKeyForEmail(email, type) {
+            const sanitized = encodeURIComponent(email.toLowerCase().trim());
+            return `wn_tracker_${type}_${sanitized}`;
+        }
+
+        // Initialize Data for the currently verified email
+        function initData() {
+            try {
+                // Read active verified email
+                const savedActiveEmail = localStorage.getItem(ACTIVE_EMAIL_KEY);
+                if (savedActiveEmail) {
+                    currentVerifiedEmail = savedActiveEmail;
+                }
+
+                updateActiveEmailBadge();
+
+                const catKey = getStorageKeyForEmail(currentVerifiedEmail, 'categories');
+                const txKey = getStorageKeyForEmail(currentVerifiedEmail, 'transactions');
+
+                const storedCats = localStorage.getItem(catKey);
+                categories = storedCats ? JSON.parse(storedCats) : DEFAULT_CATEGORIES;
+
+                const storedTx = localStorage.getItem(txKey);
+                if (storedTx) {
+                    transactions = JSON.parse(storedTx);
+                } else {
+                    // For the demo account seed sample data, for new emails start with fresh empty ledger
+                    if (currentVerifiedEmail === DEFAULT_DEMO_EMAIL) {
+                        transactions = DEFAULT_TRANSACTIONS;
+                    } else {
+                        transactions = [];
+                    }
+                }
+            } catch (err) {
+                console.error("Storage load error:", err);
+                categories = DEFAULT_CATEGORIES;
+                transactions = DEFAULT_TRANSACTIONS;
+            }
+        }
+
+        function updateActiveEmailBadge() {
+            const badge = document.getElementById('active-user-email-display');
+            const modalBadge = document.getElementById('current-verified-badge');
+            if (badge) badge.textContent = currentVerifiedEmail;
+            if (modalBadge) modalBadge.textContent = currentVerifiedEmail;
+        }
+
+        function saveCategories() {
+            try {
+                const catKey = getStorageKeyForEmail(currentVerifiedEmail, 'categories');
+                localStorage.setItem(catKey, JSON.stringify(categories));
+            } catch (e) {
+                console.warn('Storage quota limit reached:', e);
+            }
+        }
+
+        function saveTransactions() {
+            try {
+                const txKey = getStorageKeyForEmail(currentVerifiedEmail, 'transactions');
+                localStorage.setItem(txKey, JSON.stringify(transactions));
+            } catch (e) {
+                console.warn('Storage quota limit reached:', e);
+                showToast("Storage quota nearly full. Please export backup.", "error");
+            }
+        }
+
+        // ==========================================
+        // EMAIL VERIFICATION FLOW
+        // ==========================================
+        function openEmailVerifyModal() {
+            const modal = document.getElementById('email-verify-modal');
+            document.getElementById('input-verify-email').value = '';
+            document.getElementById('input-verification-pin').value = '';
+            backToEmailStep();
+            modal.classList.remove('hidden');
+        }
+
+        function closeEmailVerifyModal() {
+            document.getElementById('email-verify-modal').classList.add('hidden');
+        }
+
+        function backToEmailStep() {
+            document.getElementById('verify-step-email').classList.remove('hidden');
+            document.getElementById('verify-step-code').classList.add('hidden');
+            generatedVerificationPin = null;
+            pendingVerificationEmail = null;
+        }
+
+        function sendVerificationCode() {
+            const emailInput = document.getElementById('input-verify-email').value.trim();
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+            if (!emailInput || !emailRegex.test(emailInput)) {
+                showToast("Please enter a valid email address.", "error");
+                return;
+            }
+
+            pendingVerificationEmail = emailInput.toLowerCase();
+
+            // Generate realistic 6-digit numeric OTP
+            generatedVerificationPin = Math.floor(100000 + Math.random() * 900000).toString();
+
+            // Display in step 2
+            document.getElementById('target-verify-email').textContent = pendingVerificationEmail;
+            document.getElementById('mock-code-hint').textContent = generatedVerificationPin;
+            document.getElementById('input-verification-pin').value = '';
+
+            document.getElementById('verify-step-email').classList.add('hidden');
+            document.getElementById('verify-step-code').classList.remove('hidden');
+
+            showToast(`Verification code sent to ${pendingVerificationEmail}`, "info");
+        }
+
+        function confirmVerificationCode() {
+            const enteredPin = document.getElementById('input-verification-pin').value.trim();
+
+            if (!enteredPin) {
+                showToast("Please enter the 6-digit code.", "error");
+                return;
+            }
+
+            if (enteredPin !== generatedVerificationPin) {
+                showToast("Invalid verification code. Please try again.", "error");
+                return;
+            }
+
+            // Successfully Verified! Switch the active user email and load their specific ledger
+            currentVerifiedEmail = pendingVerificationEmail;
+            localStorage.setItem(ACTIVE_EMAIL_KEY, currentVerifiedEmail);
+
+            initData();
+            syncCategorySelectors();
+            refreshDashboard();
+            closeEmailVerifyModal();
+
+            showToast(`Verified! Loaded ledger for ${currentVerifiedEmail}`, "success");
+        }
+
+        // Populate Dynamic Dropdowns
+        function syncCategorySelectors() {
+            const entryCatSelect = document.getElementById('entryCategory');
+            const filterCatSelect = document.getElementById('category-filter');
+            const selectedType = document.querySelector('input[name="entryType"]:checked')?.value || 'expense';
+
+            // 1. Transaction form dropdown
+            entryCatSelect.innerHTML = '';
+            const applicableCats = categories.filter(c => c.type === selectedType);
+            
+            if (applicableCats.length === 0) {
+                const emptyOpt = document.createElement('option');
+                emptyOpt.value = '';
+                emptyOpt.textContent = `No ${selectedType} categories. Add one!`;
+                entryCatSelect.appendChild(emptyOpt);
+            } else {
+                applicableCats.forEach(cat => {
+                    const opt = document.createElement('option');
+                    opt.value = cat.name;
+                    opt.textContent = cat.name;
+                    entryCatSelect.appendChild(opt);
+                });
+            }
+
+            // 2. Ledger Category Filter
+            const curFilterVal = filterCatSelect.value;
+            filterCatSelect.innerHTML = '<option value="all">All Categories</option>';
+            categories.forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat.name;
+                opt.textContent = `${cat.name} (${cat.type === 'income' ? 'Income' : 'Expense'})`;
+                filterCatSelect.appendChild(opt);
+            });
+            if (curFilterVal && Array.from(filterCatSelect.options).some(o => o.value === curFilterVal)) {
+                filterCatSelect.value = curFilterVal;
+            }
+        }
+
+        function renderCategoryModalItems() {
+            const container = document.getElementById('category-items-container');
+            container.innerHTML = '';
+
+            categories.forEach(cat => {
+                const usageCount = transactions.filter(t => t.category === cat.name).length;
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between p-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs';
+                div.innerHTML = `
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <span class="w-3.5 h-3.5 rounded-full flex-shrink-0" style="background-color: ${cat.color}"></span>
+                        <span class="font-bold text-slate-200 truncate">${escapeHtml(cat.name)}</span>
+                        <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full ${cat.type === 'income' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800/60' : 'bg-rose-950 text-rose-400 border border-rose-800/60'}">
+                            ${cat.type}
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        <span class="text-[10px] text-slate-500">${usageCount} entries</span>
+                        <button onclick="deleteCategory('${cat.id}')" class="text-slate-500 hover:text-rose-400 p-1.5 min-h-[36px] min-w-[36px] flex items-center justify-center transition" title="Delete Category">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function deleteCategory(catId) {
+            const target = categories.find(c => c.id === catId);
+            if (!target) return;
+
+            // Integrity Check: Prevent orphaned transactions
+            const inUse = transactions.some(t => t.category === target.name);
+            if (inUse) {
+                showToast(`Cannot delete "${target.name}" because it is linked to existing transactions.`, 'error');
+                return;
+            }
+
+            categories = categories.filter(c => c.id !== catId);
+            saveCategories();
+            syncCategorySelectors();
+            renderCategoryModalItems();
+            refreshDashboard();
+            showToast(`Category "${target.name}" deleted.`, 'success');
+        }
+
+        function handleTypeChange() {
+            syncCategorySelectors();
+        }
+
+        // Data Filtering Logic
+        function getFilteredEntries() {
+            const timeFilter = document.getElementById('time-filter').value;
+            const catFilter = document.getElementById('category-filter').value;
+            const query = document.getElementById('ledger-search').value.toLowerCase().trim();
+
+            const today = new Date();
+            const thisYear = today.getFullYear();
+            const thisMonth = today.getMonth();
+
+            return transactions.filter(tx => {
+                const txDate = new Date(tx.date + 'T00:00:00');
+                const tYear = txDate.getFullYear();
+                const tMonth = txDate.getMonth();
+
+                // 1. Time Filter
+                if (timeFilter === 'current-month') {
+                    if (tYear !== thisYear || tMonth !== thisMonth) return false;
+                } else if (timeFilter === 'prev-month') {
+                    const prevMonth = thisMonth === 0 ? 11 : thisMonth - 1;
+                    const prevYearTarget = thisMonth === 0 ? thisYear - 1 : thisYear;
+                    if (tYear !== prevYearTarget || tMonth !== prevMonth) return false;
+                } else if (timeFilter === 'current-year') {
+                    if (tYear !== thisYear) return false;
+                }
+
+                // 2. Category Filter
+                if (catFilter !== 'all' && tx.category !== catFilter) {
+                    return false;
+                }
+
+                // 3. Search Query
+                if (query) {
+                    const matchDesc = tx.description.toLowerCase().includes(query);
+                    const matchCat = tx.category.toLowerCase().includes(query);
+                    const matchAmt = tx.amount.toString().includes(query);
+                    if (!matchDesc && !matchCat && !matchAmt) return false;
+                }
+
+                return true;
+            });
+        }
+
+        // Analytical Peak Spending Calculation
+        function analyzePeakSpending(entries) {
+            const expenses = entries.filter(t => t.type === 'expense');
+            const bannerText = document.getElementById('peak-spending-text');
+            const bannerBadge = document.getElementById('peak-period-badge');
+
+            if (expenses.length === 0) {
+                bannerText.textContent = "No expenses recorded for this timeframe.";
+                bannerBadge.textContent = "Zero Outflow";
+                return;
+            }
+
+            // Aggregate total spent per calendar date
+            const dateAggregate = {};
+            expenses.forEach(e => {
+                dateAggregate[e.date] = (dateAggregate[e.date] || 0) + e.amount;
+            });
+
+            let peakDate = null;
+            let maxTotal = -1;
+
+            for (const [d, sum] of Object.entries(dateAggregate)) {
+                if (sum > maxTotal) {
+                    maxTotal = sum;
+                    peakDate = d;
+                }
+            }
+
+            const peakDateFormatted = new Date(peakDate + 'T00:00:00').toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            });
+
+            // Find predominant category on that day
+            const topCategoryOnDay = expenses
+                .filter(e => e.date === peakDate)
+                .sort((a, b) => b.amount - a.amount)[0]?.category || 'General';
+
+            bannerText.innerHTML = `You spent the most money on <strong class="text-rose-400 font-bold">${peakDateFormatted}</strong> totaling <strong class="text-white font-black">${currencyFmt.format(maxTotal)}</strong> (Primary driver: <em class="text-rose-300">${topCategoryOnDay}</em>).`;
+            bannerBadge.textContent = `Peak: ${currencyFmt.format(maxTotal)}`;
+        }
+
+        // Render Ledger (Mobile Cards + Desktop Table)
+        function renderLedger(entries) {
+            const mobileContainer = document.getElementById('mobile-ledger-list');
+            const desktopTbody = document.getElementById('desktop-ledger-body');
+            const emptyView = document.getElementById('empty-ledger-view');
+            const countIndicator = document.getElementById('ledger-count-indicator');
+
+            mobileContainer.innerHTML = '';
+            desktopTbody.innerHTML = '';
+
+            // Apply active sort
+            entries.sort((a, b) => {
+                if (activeSort.field === 'date') {
+                    return activeSort.order === 'asc' 
+                        ? new Date(a.date) - new Date(b.date)
+                        : new Date(b.date) - new Date(a.date);
+                } else if (activeSort.field === 'amount') {
+                    return activeSort.order === 'asc' 
+                        ? a.amount - b.amount
+                        : b.amount - a.amount;
+                }
+                return 0;
+            });
+
+            countIndicator.textContent = `Showing ${entries.length} record${entries.length === 1 ? '' : 's'}`;
+
+            if (entries.length === 0) {
+                emptyView.classList.remove('hidden');
+                emptyView.classList.add('flex');
+                return;
+            } else {
+                emptyView.classList.add('hidden');
+                emptyView.classList.remove('flex');
+            }
+
+            entries.forEach(item => {
+                const catObj = categories.find(c => c.name === item.category) || { color: '#64748b' };
+                const formattedDate = new Date(item.date + 'T00:00:00').toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric'
+                });
+                const fullDate = new Date(item.date + 'T00:00:00').toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                });
+
+                const isIncome = item.type === 'income';
+                const amountClass = isIncome ? 'text-emerald-400 font-black' : 'text-rose-400 font-black';
+                const prefix = isIncome ? '+' : '-';
+
+                // Receipt Badge markup
+                const hasReceipt = Boolean(item.receiptUrl);
+                const receiptButtonHtml = hasReceipt ? `
+                    <button onclick="viewReceipt(${item.id})" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-700/60 text-indigo-300 text-[11px] font-semibold transition active:scale-95 min-h-[36px]" title="View Receipt">
+                        <i class="fas fa-paperclip"></i>
+                        <span>Receipt</span>
+                    </button>
+                ` : `<span class="text-slate-600 text-xs">-</span>`;
+
+                // 1. MOBILE CARD ROW
+                const card = document.createElement('div');
+                card.className = 'p-4 hover:bg-slate-800/40 transition flex items-center justify-between gap-3 active:bg-slate-850';
+                card.innerHTML = `
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background-color: ${catObj.color}25; color: ${catObj.color}; border: 1px solid ${catObj.color}50">
+                            <i class="fas ${isIncome ? 'fa-arrow-down' : 'fa-arrow-up'} text-sm"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <h4 class="text-xs font-bold text-slate-100 truncate">${escapeHtml(item.description)}</h4>
+                            <div class="flex items-center gap-1.5 mt-0.5">
+                                <span class="text-[10px] font-medium text-slate-400">${formattedDate}</span>
+                                <span class="text-slate-600">•</span>
+                                <span class="text-[10px] font-bold truncate" style="color: ${catObj.color}">${escapeHtml(item.category)}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-right flex-shrink-0 flex flex-col items-end gap-1">
+                        <span class="text-sm ${amountClass}">${prefix}${currencyFmt.format(item.amount)}</span>
+                        <div class="flex items-center gap-1">
+                            ${hasReceipt ? `
+                                <button onclick="viewReceipt(${item.id})" class="text-indigo-400 hover:text-indigo-300 p-1 text-xs" title="Receipt">
+                                    <i class="fas fa-paperclip"></i>
+                                </button>
+                            ` : ''}
+                            <button onclick="deleteTx(${item.id})" class="text-slate-500 hover:text-rose-400 p-1 text-xs" title="Delete">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                mobileContainer.appendChild(card);
+
+                // 2. DESKTOP TABLE ROW
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-800/40 border-b border-slate-800 transition-colors';
+                tr.innerHTML = `
+                    <td class="px-5 py-3.5 whitespace-nowrap font-medium text-slate-300">${fullDate}</td>
+                    <td class="px-5 py-3.5 font-bold text-white">${escapeHtml(item.description)}</td>
+                    <td class="px-5 py-3.5">
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold" style="background-color: ${catObj.color}20; color: ${catObj.color}; border: 1px solid ${catObj.color}40">
+                            <span class="w-1.5 h-1.5 rounded-full" style="background-color: ${catObj.color}"></span>
+                            ${escapeHtml(item.category)}
+                        </span>
+                    </td>
+                    <td class="px-5 py-3.5 text-right whitespace-nowrap ${amountClass}">${prefix}${currencyFmt.format(item.amount)}</td>
+                    <td class="px-5 py-3.5 text-center whitespace-nowrap">${receiptButtonHtml}</td>
+                    <td class="px-5 py-3.5 text-center whitespace-nowrap">
+                        <button onclick="deleteTx(${item.id})" class="text-slate-500 hover:text-rose-400 p-2 min-h-[36px] min-w-[36px] transition inline-flex items-center justify-center" title="Delete">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </td>
+                `;
+                desktopTbody.appendChild(tr);
+            });
+        }
+
+        function toggleSort(field) {
+            if (activeSort.field === field) {
+                activeSort.order = activeSort.order === 'asc' ? 'desc' : 'asc';
+            } else {
+                activeSort.field = field;
+                activeSort.order = 'desc';
+            }
+            renderLedger(getFilteredEntries());
+        }
+
+        function deleteTx(id) {
+            transactions = transactions.filter(t => t.id !== id);
+            saveTransactions();
+            refreshDashboard();
+            showToast("Transaction deleted from ledger.", "info");
+        }
+
+        // Render Charts with Responsive Aspect Ratios & Dark Palette
+        function updateCharts(entries) {
+            // Chart 1: Cashflow Spending Timeline
+            const expenseByDate = {};
+            const incomeByDate = {};
+
+            entries.forEach(t => {
+                if (t.type === 'expense') {
+                    expenseByDate[t.date] = (expenseByDate[t.date] || 0) + t.amount;
+                } else {
+                    incomeByDate[t.date] = (incomeByDate[t.date] || 0) + t.amount;
+                }
+            });
+
+            const uniqueDates = Array.from(new Set([...Object.keys(expenseByDate), ...Object.keys(incomeByDate)])).sort();
+            const dateLabels = uniqueDates.map(d => {
+                const parts = d.split('-');
+                return `${parts[1]}/${parts[2]}`;
+            });
+
+            const expenseData = uniqueDates.map(d => expenseByDate[d] || 0);
+            const incomeData = uniqueDates.map(d => incomeByDate[d] || 0);
+
+            if (trendChart) trendChart.destroy();
+            const ctxTrend = document.getElementById('trendChart').getContext('2d');
+
+            trendChart = new Chart(ctxTrend, {
+                type: 'line',
+                data: {
+                    labels: dateLabels.length ? dateLabels : ['No Data'],
+                    datasets: [
+                        {
+                            label: 'Expenses',
+                            data: expenseData.length ? expenseData : [0],
+                            borderColor: '#f43f5e',
+                            backgroundColor: 'rgba(244, 63, 94, 0.12)',
+                            borderWidth: 2.5,
+                            fill: true,
+                            tension: 0.35,
+                            pointRadius: 4,
+                            pointHoverRadius: 6,
+                            pointBackgroundColor: '#0f172a',
+                            pointBorderColor: '#f43f5e',
+                            pointBorderWidth: 2
+                        },
+                        {
+                            label: 'Income',
+                            data: incomeData.length ? incomeData : [0],
+                            borderColor: '#34d399',
+                            backgroundColor: 'rgba(52, 211, 153, 0.05)',
+                            borderWidth: 2,
+                            borderDash: [4, 4],
+                            fill: false,
+                            tension: 0.35,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#34d399'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#0f172a',
+                            titleColor: '#f8fafc',
+                            bodyColor: '#cbd5e1',
+                            borderColor: '#334155',
+                            borderWidth: 1,
+                            callbacks: {
+                                label: ctx => ` ${ctx.dataset.label}: ${currencyFmt.format(ctx.raw)}`
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: val => '$' + (val >= 1000 ? (val / 1000) + 'k' : val),
+                                font: { size: 10 },
+                                color: '#94a3b8'
+                            },
+                            grid: { color: 'rgba(255, 255, 255, 0.06)' }
+                        },
+                        x: {
+                            ticks: { font: { size: 10 }, color: '#94a3b8' },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+
+            // Chart 2: Category Expense Breakdown
+            const expenseMap = {};
+            entries.filter(t => t.type === 'expense').forEach(e => {
+                expenseMap[e.category] = (expenseMap[e.category] || 0) + e.amount;
+            });
+
+            const catLabels = Object.keys(expenseMap);
+            const catValues = Object.values(expenseMap);
+            const catColors = catLabels.map(name => {
+                const found = categories.find(c => c.name === name);
+                return found ? found.color : '#64748b';
+            });
+
+            if (categoryChart) categoryChart.destroy();
+            const ctxCategory = document.getElementById('categoryChart').getContext('2d');
+
+            categoryChart = new Chart(ctxCategory, {
+                type: 'doughnut',
+                data: {
+                    labels: catLabels.length ? catLabels : ['None'],
+                    datasets: [{
+                        data: catValues.length ? catValues : [1],
+                        backgroundColor: catColors.length ? catColors : ['#334155'],
+                        borderWidth: 2,
+                        borderColor: '#0f172a'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '72%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#0f172a',
+                            titleColor: '#f8fafc',
+                            bodyColor: '#cbd5e1',
+                            borderColor: '#334155',
+                            borderWidth: 1,
+                            callbacks: {
+                                label: ctx => ` ${ctx.label}: ${currencyFmt.format(ctx.raw)}`
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Populate Category Legend List
+            const legendBox = document.getElementById('category-legend');
+            legendBox.innerHTML = '';
+            if (catLabels.length === 0) {
+                legendBox.innerHTML = `<p class="text-slate-500 italic text-center py-2 text-[11px]">No expense categories in current filter</p>`;
+            } else {
+                catLabels.forEach((name, i) => {
+                    const row = document.createElement('div');
+                    row.className = 'flex items-center justify-between py-1.5 border-slate-800';
+                    row.innerHTML = `
+                        <div class="flex items-center gap-2 truncate">
+                            <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background-color: ${catColors[i]}"></span>
+                            <span class="truncate font-semibold text-slate-300">${escapeHtml(name)}</span>
+                        </div>
+                        <span class="font-bold text-white ml-2 flex-shrink-0">${currencyFmt.format(catValues[i])}</span>
+                    `;
+                    legendBox.appendChild(row);
+                });
+            }
+        }
+
+        // Refresh All Visuals & Metrics
+        function refreshDashboard() {
+            const filtered = getFilteredEntries();
+
+            // Total Inflows & Outflows
+            const totalIncome = filtered
+                .filter(t => t.type === 'income')
+                .reduce((acc, t) => acc + t.amount, 0);
+
+            const totalExpense = filtered
+                .filter(t => t.type === 'expense')
+                .reduce((acc, t) => acc + t.amount, 0);
+
+            const netProfit = totalIncome - totalExpense;
+            const margin = totalIncome > 0 ? Math.max(0, Math.round((netProfit / totalIncome) * 100)) : 0;
+
+            // KPI 1: Income
+            document.getElementById('kpi-income').textContent = currencyFmt.format(totalIncome);
+            document.getElementById('kpi-income-sub').textContent = `${filtered.filter(t => t.type === 'income').length} deposits`;
+
+            // KPI 2: Expense
+            document.getElementById('kpi-expense').textContent = currencyFmt.format(totalExpense);
+            document.getElementById('kpi-expense-sub').textContent = `${filtered.filter(t => t.type === 'expense').length} payments`;
+
+            // KPI 3: Net Profit
+            const netEl = document.getElementById('kpi-net');
+            const netStatus = document.getElementById('kpi-net-status');
+            netEl.textContent = currencyFmt.format(netProfit);
+
+            if (netProfit >= 0) {
+                netEl.className = 'text-lg sm:text-2xl font-black text-emerald-400 truncate';
+                netStatus.textContent = 'Net Surplus';
+                netStatus.className = 'text-[11px] text-emerald-400 font-bold mt-0.5 sm:mt-1 truncate';
+            } else {
+                netEl.className = 'text-lg sm:text-2xl font-black text-rose-400 truncate';
+                netStatus.textContent = 'Net Deficit';
+                netStatus.className = 'text-[11px] text-rose-400 font-bold mt-0.5 sm:mt-1 truncate';
+            }
+
+            // KPI 4: Margin
+            document.getElementById('kpi-margin').textContent = `${margin}%`;
+            document.getElementById('kpi-margin-bar').style.width = `${Math.min(100, Math.max(0, margin))}%`;
+
+            // Peak Spend Analyzer
+            analyzePeakSpending(filtered);
+
+            // Table & Mobile Cards
+            renderLedger(filtered);
+
+            // Charts
+            updateCharts(filtered);
+        }
+
+        // Receipt Upload & Lightbox Logic
+        function handleReceiptFileSelect(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Limit file size to 3MB for localStorage safety
+            if (file.size > 3 * 1024 * 1024) {
+                showToast("Receipt file exceeds 3MB limit.", "error");
+                clearSelectedReceipt();
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                attachedReceiptDataUrl = evt.target.result;
+                attachedReceiptFileName = file.name;
+
+                document.getElementById('receipt-upload-placeholder').classList.add('hidden');
+                const previewEl = document.getElementById('receipt-upload-preview');
+                previewEl.classList.remove('hidden');
+                previewEl.classList.add('flex');
+                document.getElementById('receipt-file-name').textContent = file.name;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearSelectedReceipt() {
+            attachedReceiptDataUrl = null;
+            attachedReceiptFileName = null;
+            document.getElementById('entryReceiptFile').value = '';
+            document.getElementById('receipt-upload-placeholder').classList.remove('hidden');
+            const previewEl = document.getElementById('receipt-upload-preview');
+            previewEl.classList.add('hidden');
+            previewEl.classList.remove('flex');
+        }
+
+        function viewReceipt(txId) {
+            const tx = transactions.find(t => t.id === txId);
+            if (!tx || !tx.receiptUrl) return;
+
+            const modal = document.getElementById('receipt-modal');
+            const title = document.getElementById('receipt-view-title');
+            const body = document.getElementById('receipt-view-body');
+            const meta = document.getElementById('receipt-view-meta');
+            const download = document.getElementById('receipt-view-download');
+
+            title.textContent = tx.receiptName || 'Receipt';
+            meta.textContent = `${tx.description} (${currencyFmt.format(tx.amount)})`;
+            download.href = tx.receiptUrl;
+            download.download = tx.receiptName || 'receipt';
+
+            if (tx.receiptUrl.startsWith('data:image') || tx.receiptUrl.startsWith('http')) {
+                body.innerHTML = `<img src="${tx.receiptUrl}" alt="Receipt Document" class="max-h-[50vh] w-auto object-contain rounded-lg">`;
+            } else {
+                body.innerHTML = `
+                    <div class="py-8 text-center">
+                        <i class="fas fa-file-pdf text-rose-400 text-4xl mb-2"></i>
+                        <p class="text-xs font-semibold text-slate-300">${tx.receiptName || 'Document file'}</p>
+                    </div>
+                `;
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeReceiptModal() {
+            document.getElementById('receipt-modal').classList.add('hidden');
+        }
+
+        // Modal Controls
+        function openTxModal() {
+            const modal = document.getElementById('tx-modal');
+            document.getElementById('entryDate').value = new Date().toISOString().split('T')[0];
+            syncCategorySelectors();
+            clearSelectedReceipt();
+            modal.classList.remove('hidden');
+        }
+
+        function closeTxModal() {
+            document.getElementById('tx-modal').classList.add('hidden');
+        }
+
+        function openCategoryModal() {
+            renderCategoryModalItems();
+            document.getElementById('category-modal').classList.remove('hidden');
+        }
+
+        function closeCategoryModal() {
+            document.getElementById('category-modal').classList.add('hidden');
+            syncCategorySelectors();
+        }
+
+        // CSV Export Function
+        function exportToCSV() {
+            const entries = getFilteredEntries();
+            if (entries.length === 0) {
+                showToast("No transactions found to export.", "error");
+                return;
+            }
+
+            const headers = ["ID", "Date", "Type", "Category", "Description", "Amount", "HasReceipt"];
+            const rows = entries.map(t => [
+                t.id,
+                t.date,
+                t.type,
+                `"${t.category.replace(/"/g, '""')}"`,
+                `"${t.description.replace(/"/g, '""')}"`,
+                t.amount,
+                t.receiptUrl ? "Yes" : "No"
+            ]);
+
+            const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `WN_Money_Tracker_Export_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showToast("CSV ledger exported successfully!", "success");
+        }
+
+        // Toast Notification System (replaces alert())
+        function showToast(message, type = "info") {
+            const toast = document.getElementById('toast');
+            const msgEl = document.getElementById('toast-message');
+            const iconEl = document.getElementById('toast-icon');
+
+            msgEl.textContent = message;
+
+            if (type === 'error') {
+                toast.className = 'fixed top-5 right-5 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-2xl border text-xs sm:text-sm font-semibold transition-all transform duration-300 translate-y-0 opacity-100 bg-rose-950 border-rose-800 text-rose-200';
+                iconEl.className = 'fas fa-circle-exclamation text-rose-400';
+            } else if (type === 'success') {
+                toast.className = 'fixed top-5 right-5 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-2xl border text-xs sm:text-sm font-semibold transition-all transform duration-300 translate-y-0 opacity-100 bg-emerald-950 border-emerald-800 text-emerald-200';
+                iconEl.className = 'fas fa-circle-check text-emerald-400';
+            } else {
+                toast.className = 'fixed top-5 right-5 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-2xl border text-xs sm:text-sm font-semibold transition-all transform duration-300 translate-y-0 opacity-100 bg-slate-900 border-slate-700 text-slate-100';
+                iconEl.className = 'fas fa-info-circle text-indigo-400';
+            }
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-[-20px]', 'opacity-0');
+            }, 3200);
+        }
+
+        // ==========================================
+        // GEMINI API INTEGRATION HELPERS
+        // ==========================================
+        const apiKey = ""; // Canvas runtime automatically supplies the API key
+
+        // Exponential backoff fetch wrapper for robust LLM calls
+        async function fetchGeminiWithBackoff(apiUrl, payload, retries = 3, delay = 1000) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) {
+                        return await response.json();
+                    }
+
+                    if (response.status === 429 && i < retries - 1) {
+                        await new Promise(r => setTimeout(r, delay * Math.pow(2, i)));
+                        continue;
+                    }
+
+                    const errData = await response.json().catch(() => ({}));
+                    throw new Error(errData.error?.message || `HTTP error ${response.status}`);
+                } catch (err) {
+                    if (i === retries - 1) throw err;
+                    await new Promise(r => setTimeout(r, delay * Math.pow(2, i)));
+                }
+            }
+        }
+
+        // ==========================================
+        // FEATURE 1: AI RECEIPT AUTO-FILL (VISION OCR)
+        // ==========================================
+        async function scanReceiptWithAI() {
+            if (!attachedReceiptDataUrl) {
+                showToast("Please upload an image receipt first.", "error");
+                return;
+            }
+
+            const scanBtn = document.getElementById('ai-scan-btn');
+            const scanBtnText = document.getElementById('ai-scan-btn-text');
+
+            scanBtn.disabled = true;
+            scanBtnText.innerHTML = `<i class="fas fa-spinner fa-spin mr-1"></i> Scanning with Gemini...`;
+
+            try {
+                // Extract base64 and mime type
+                const match = attachedReceiptDataUrl.match(/^data:([^;]+);base64,(.+)$/);
+                if (!match) {
+                    throw new Error("Invalid receipt image format.");
+                }
+                const mimeType = match[1];
+                const base64Data = match[2];
+
+                // Known user categories for context
+                const expenseCategoryNames = categories.filter(c => c.type === 'expense').map(c => c.name);
+
+                const prompt = `You are an expert bookkeeping assistant. Inspect this receipt image carefully.
+Extract the transaction details and return ONLY a single JSON object matching this schema without markdown code blocks:
+{
+  "merchant": "name of merchant or vendor",
+  "date": "YYYY-MM-DD format (if year is ambiguous, use ${new Date().getFullYear()})",
+  "amount": numeric total amount (e.g. 45.50),
+  "suggestedCategory": "choose the best fitting category from this list: ${expenseCategoryNames.join(', ')} or suggest a short standard accounting category",
+  "notes": "brief 3-5 word summary"
+}`;
+
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+                const payload = {
+                    contents: [{
+                        role: "user",
+                        parts: [
+                            { text: prompt },
+                            {
+                                inlineData: {
+                                    mimeType: mimeType,
+                                    data: base64Data
+                                }
+                            }
+                        ]
+                    }],
+                    generationConfig: {
+                        responseMimeType: "application/json"
+                    }
+                };
+
+                const result = await fetchGeminiWithBackoff(apiUrl, payload);
+                const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (!text) {
+                    throw new Error("No receipt details detected. Please enter manually.");
+                }
+
+                const parsed = JSON.parse(text);
+
+                // Populate form fields with AI output
+                if (parsed.merchant) {
+                    document.getElementById('entryDescription').value = parsed.merchant;
+                }
+                if (parsed.amount && !isNaN(parsed.amount)) {
+                    document.getElementById('entryAmount').value = Number(parsed.amount).toFixed(2);
+                }
+                if (parsed.date && /^\d{4}-\d{2}-\d{2}$/.test(parsed.date)) {
+                    document.getElementById('entryDate').value = parsed.date;
+                }
+
+                // Match Category
+                const catSelect = document.getElementById('entryCategory');
+                if (parsed.suggestedCategory) {
+                    let matchedOpt = Array.from(catSelect.options).find(o => 
+                        o.value.toLowerCase() === parsed.suggestedCategory.toLowerCase() ||
+                        parsed.suggestedCategory.toLowerCase().includes(o.value.toLowerCase())
+                    );
+
+                    if (matchedOpt) {
+                        catSelect.value = matchedOpt.value;
+                    } else {
+                        // Dynamically add the new category if not existing
+                        categories.push({
+                            id: 'cat-' + Date.now(),
+                            name: parsed.suggestedCategory,
+                            type: 'expense',
+                            color: '#a855f7'
+                        });
+                        saveCategories();
+                        syncCategorySelectors();
+                        catSelect.value = parsed.suggestedCategory;
+                    }
+                }
+
+                showToast("Receipt auto-scanned by Gemini AI!", "success");
+            } catch (err) {
+                console.error("AI Receipt Scan error:", err);
+                showToast("Could not parse receipt: " + (err.message || "Unknown error"), "error");
+            } finally {
+                scanBtn.disabled = false;
+                scanBtnText.innerHTML = `Auto-Fill Form with Gemini AI`;
+            }
+        }
+
+        // ==========================================
+        // FEATURE 2: AI FINANCIAL ADVISOR & AUDIT
+        // ==========================================
+        function openAIAdvisorModal() {
+            document.getElementById('ai-advisor-modal').classList.remove('hidden');
+        }
+
+        function closeAIAdvisorModal() {
+            document.getElementById('ai-advisor-modal').classList.add('hidden');
+        }
+
+        function buildLedgerSummaryContext() {
+            const filtered = getFilteredEntries();
+            const totalIncome = filtered.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+            const totalExpense = filtered.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+            const netProfit = totalIncome - totalExpense;
+            const margin = totalIncome > 0 ? ((netProfit / totalIncome) * 100).toFixed(1) : 0;
+
+            const expenseByCategory = {};
+            filtered.filter(t => t.type === 'expense').forEach(e => {
+                expenseByCategory[e.category] = (expenseByCategory[e.category] || 0) + e.amount;
+            });
+
+            const topExpenses = filtered
+                .filter(t => t.type === 'expense')
+                .sort((a, b) => b.amount - a.amount)
+                .slice(0, 5)
+                .map(t => `${t.date}: ${t.description} ($${t.amount.toFixed(2)}) [${t.category}]`);
+
+            return `
+Financial Ledger Snapshot (${document.getElementById('time-filter').selectedOptions[0].text}):
+- Total Inflow (Income): $${totalIncome.toFixed(2)}
+- Total Outflow (Expenses): $${totalExpense.toFixed(2)}
+- Net Balance: $${netProfit.toFixed(2)}
+- Profit Margin: ${margin}%
+- Category Breakdown: ${JSON.stringify(expenseByCategory)}
+- Largest Outflows: ${topExpenses.join('; ') || 'None recorded'}
+`;
+        }
+
+        async function runAIAudit(auditType) {
+            let prompt = "";
+            if (auditType === 'comprehensive') {
+                prompt = "Perform an executive CPA financial health audit. Highlight key strengths, cash burn warnings, and 3 actionable recommendations to improve profitability.";
+            } else if (auditType === 'expenses') {
+                prompt = "Perform a thorough cost reduction analysis on the expenses. Identify areas of potential waste or overspending, and provide 3 concrete cost-cutting tactics.";
+            } else if (auditType === 'tax') {
+                prompt = "Review recorded expenses from a certified tax accounting perspective. Identify potential tax-deductible business categories, missing audit trails/receipts, and year-end deduction tips.";
+            }
+
+            await executeAICPACall(prompt);
+        }
+
+        async function askCustomAIQuestion() {
+            const input = document.getElementById('ai-custom-prompt');
+            const question = input.value.trim();
+            if (!question) {
+                showToast("Please enter a question for the AI Accountant.", "info");
+                return;
+            }
+            await executeAICPACall(question);
+        }
+
+        async function executeAICPACall(userQuestion) {
+            const loader = document.getElementById('ai-advisor-loader');
+            const content = document.getElementById('ai-advisor-content');
+            const submitBtn = document.getElementById('ai-submit-prompt-btn');
+
+            loader.classList.remove('hidden');
+            loader.classList.add('flex');
+            content.classList.add('hidden');
+            if (submitBtn) submitBtn.disabled = true;
+
+            const ledgerContext = buildLedgerSummaryContext();
+            const systemPrompt = `You are a certified professional CPA and financial controller for small businesses and individuals.
+Provide concise, highly actionable, structured advice using clear bullet points and bold headers. Keep tone professional yet easy to understand.
+Do not use raw markdown asterisks if possible, use simple readable text with bullet points.`;
+
+            const fullPrompt = `${ledgerContext}\nUser Request: ${userQuestion}`;
+
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+            const payload = {
+                contents: [{ parts: [{ text: fullPrompt }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] }
+            };
+
+            try {
+                const result = await fetchGeminiWithBackoff(apiUrl, payload);
+                const answer = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (!answer) {
+                    throw new Error("Gemini AI did not return a response.");
+                }
+
+                // Format the text into HTML cleanly
+                const formattedHtml = answer
+                    .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-bold">$1</strong>')
+                    .replace(/^\* (.*$)/gim, '<li class="ml-4 list-disc text-slate-300">$1</li>')
+                    .replace(/^- (.*$)/gim, '<li class="ml-4 list-disc text-slate-300">$1</li>')
+                    .replace(/\n\n/g, '<div class="h-2"></div>')
+                    .replace(/\n/g, '<br>');
+
+                content.innerHTML = `<div class="p-1">${formattedHtml}</div>`;
+                showToast("AI financial advice generated!", "success");
+            } catch (err) {
+                console.error("AI CPA Error:", err);
+                content.innerHTML = `<div class="p-3 bg-rose-950 text-rose-300 rounded-lg border border-rose-800">
+                    <p class="font-bold">Error generating AI analysis</p>
+                    <p class="text-[11px] mt-1">${err.message || 'Please check your connection and try again.'}</p>
+                </div>`;
+                showToast("AI analysis failed: " + err.message, "error");
+            } finally {
+                loader.classList.add('hidden');
+                loader.classList.remove('flex');
+                content.classList.remove('hidden');
+                if (submitBtn) submitBtn.disabled = false;
+            }
+        }
+
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // Initialize App & Event Listeners
+        window.addEventListener('DOMContentLoaded', () => {
+            initData();
+            syncCategorySelectors();
+
+            // Set today's date in form
+            document.getElementById('entryDate').value = new Date().toISOString().split('T')[0];
+
+            // Filters & Search Listeners
+            document.getElementById('time-filter').addEventListener('change', refreshDashboard);
+            document.getElementById('category-filter').addEventListener('change', refreshDashboard);
+            document.getElementById('ledger-search').addEventListener('input', () => {
+                renderLedger(getFilteredEntries());
+            });
+
+            // Category Manager Button
+            document.getElementById('open-cat-btn').addEventListener('click', openCategoryModal);
+
+            // Add Category Form Handler
+            document.getElementById('add-category-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const name = document.getElementById('new-cat-name').value.trim();
+                const type = document.getElementById('new-cat-type').value;
+                const color = document.getElementById('new-cat-color').value;
+
+                if (!name) return;
+
+                if (categories.some(c => c.name.toLowerCase() === name.toLowerCase())) {
+                    showToast(`A category named "${name}" already exists.`, "error");
+                    return;
+                }
+
+                categories.push({
+                    id: 'cat-' + Date.now(),
+                    name,
+                    type,
+                    color
+                });
+
+                saveCategories();
+                syncCategorySelectors();
+                renderCategoryModalItems();
+                refreshDashboard();
+                document.getElementById('new-cat-name').value = '';
+                showToast(`Category "${name}" created!`, "success");
+            });
+
+            // Transaction Form Submit Handler
+            document.getElementById('tx-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const type = document.querySelector('input[name="entryType"]:checked').value;
+                const date = document.getElementById('entryDate').value;
+                const amount = parseFloat(document.getElementById('entryAmount').value);
+                const category = document.getElementById('entryCategory').value;
+                const description = document.getElementById('entryDescription').value.trim();
+
+                if (!date || isNaN(amount) || amount <= 0 || !category || !description) {
+                    showToast("Please fill all required fields correctly.", "error");
+                    return;
+                }
+
+                const newTx = {
+                    id: Date.now(),
+                    date,
+                    type,
+                    amount,
+                    category,
+                    description,
+                    receiptUrl: attachedReceiptDataUrl,
+                    receiptName: attachedReceiptFileName
+                };
+
+                transactions.unshift(newTx);
+                saveTransactions();
+                refreshDashboard();
+
+                // Reset Form
+                document.getElementById('tx-form').reset();
+                document.getElementById('entryDate').value = new Date().toISOString().split('T')[0];
+                document.querySelector('input[name="entryType"][value="expense"]').checked = true;
+                clearSelectedReceipt();
+                closeTxModal();
+
+                showToast("Transaction successfully recorded!", "success");
+            });
+
+            // Close modals when clicking backdrop
+            window.addEventListener('click', (e) => {
+                const txModal = document.getElementById('tx-modal');
+                const catModal = document.getElementById('category-modal');
+                const receiptModal = document.getElementById('receipt-modal');
+                const aiModal = document.getElementById('ai-advisor-modal');
+                const emailModal = document.getElementById('email-verify-modal');
+
+                if (e.target === txModal) closeTxModal();
+                if (e.target === catModal) closeCategoryModal();
+                if (e.target === receiptModal) closeReceiptModal();
+                if (e.target === aiModal) closeAIAdvisorModal();
+                if (e.target === emailModal) closeEmailVerifyModal();
+            });
+
+            // Initial render
+            refreshDashboard();
+        });
+    </script>
+</body>
+</html>
