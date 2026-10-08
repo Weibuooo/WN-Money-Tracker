@@ -46,6 +46,12 @@
     ::-webkit-scrollbar-track { background: #0f172a; }
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+    .shake-anim { animation: shake 0.4s ease-in-out; }
     @media (max-width: 639px) {
       .mobile-sheet {
         border-bottom-left-radius: 0;
@@ -59,127 +65,46 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen antialiased flex flex-col justify-between selection:bg-indigo-600 selection:text-white">
 
-  <!-- ================= 1. DUAL-MODE AUTH LOCK SCREEN ================= -->
-  <div id="authOverlay" class="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center p-4">
-    <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-8 relative overflow-hidden">
+  <!-- ================= 1. PASSCODE LOCK SCREEN (888888) ================= -->
+  <div id="passcodeOverlay" class="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center p-4">
+    <div id="lockCard" class="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-8 text-center relative overflow-hidden transition-all">
       <!-- Ambient Glow -->
-      <div class="absolute -top-12 -right-12 w-40 h-40 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
-      
-      <!-- Brand Header -->
-      <div class="text-center mb-6">
-        <div class="w-14 h-14 bg-gradient-to-tr from-indigo-600 to-indigo-500 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-indigo-600/30 text-white text-xl font-black">
-          WN
-        </div>
-        <h1 class="text-xl sm:text-2xl font-black tracking-tight text-white">WN Money Tracker</h1>
-        <p class="text-xs text-slate-400 mt-1">Cross-device bookkeeping synced with your cloud</p>
-      </div>
+      <div class="absolute -top-12 -right-12 w-36 h-36 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
 
-      <!-- Auth Method Tabs -->
-      <div class="flex p-1 bg-slate-950 border border-slate-800 rounded-xl mb-6">
-        <button type="button" id="tabOtpBtn" onclick="switchAuthTab('otp')" 
-          class="flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 bg-indigo-600 text-white shadow-sm cursor-pointer">
-          <i class="fas fa-envelope text-xs"></i>
-          <span>Email Code (OTP)</span>
+      <!-- Icon & Branding -->
+      <div class="w-16 h-16 bg-gradient-to-tr from-indigo-600 to-indigo-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-600/30 text-white text-2xl font-black">
+        WN
+      </div>
+      <h1 class="text-xl font-black tracking-tight text-white mb-1">WN Money Tracker</h1>
+      <p class="text-xs text-slate-400 mb-6">Enter website passcode to access cloud ledger</p>
+
+      <!-- PIN Input -->
+      <div class="space-y-4">
+        <div class="relative">
+          <i class="fas fa-lock absolute left-4 top-3.5 text-slate-500 text-sm"></i>
+          <input type="password" id="passcodeInput" maxlength="12" placeholder="Passcode" autofocus
+            class="w-full pl-11 pr-11 py-3 bg-slate-950 border border-slate-700/80 rounded-xl text-slate-100 placeholder-slate-500 text-center font-mono font-bold tracking-widest text-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+            onkeydown="if(event.key === 'Enter') handleUnlock()">
+          <button type="button" onclick="togglePasscodeVisibility()" class="absolute right-3.5 top-3.5 text-slate-500 hover:text-slate-300">
+            <i id="eyeIcon" class="fas fa-eye text-sm"></i>
+          </button>
+        </div>
+
+        <button type="button" id="btnUnlock" onclick="handleUnlock()"
+          class="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-bold rounded-xl text-sm transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 cursor-pointer">
+          <i class="fas fa-arrow-right-to-bracket text-xs"></i>
+          <span>Unlock Tracker</span>
         </button>
-        <button type="button" id="tabPasswordBtn" onclick="switchAuthTab('password')" 
-          class="flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 text-slate-400 hover:text-white cursor-pointer">
-          <i class="fas fa-key text-xs"></i>
-          <span>Password / PIN</span>
-        </button>
-      </div>
 
-      <!-- MODE A: EMAIL OTP -->
-      <div id="authOtpContainer" class="space-y-4">
-        <!-- OTP Step 1: Send Code -->
-        <div id="otpStep1" class="space-y-4">
-          <div>
-            <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Email Address</label>
-            <div class="relative">
-              <i class="fas fa-envelope absolute left-3.5 top-3.5 text-slate-500 text-sm"></i>
-              <input type="email" id="otpEmailInput" placeholder="name@domain.com"
-                class="w-full pl-10 pr-4 py-3 bg-slate-950 border border-slate-700/80 rounded-xl text-slate-100 placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                onkeydown="if(event.key === 'Enter') handleSendOtp()">
-            </div>
-          </div>
-
-          <button type="button" id="btnSendOtp" onclick="handleSendOtp()"
-            class="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-bold rounded-xl text-xs sm:text-sm transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 cursor-pointer">
-            <i class="fas fa-paper-plane text-xs"></i>
-            <span id="btnSendOtpText">Send 6-Digit Code</span>
-          </button>
-        </div>
-
-        <!-- OTP Step 2: Verify Code -->
-        <div id="otpStep2" class="space-y-4 hidden">
-          <div>
-            <div class="flex justify-between items-center mb-1.5">
-              <label class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Enter 6-Digit Code</label>
-              <button type="button" onclick="backToOtpStep1()" class="text-xs font-semibold text-indigo-400 hover:underline">Change email</button>
-            </div>
-            <div class="relative">
-              <i class="fas fa-shield-halved absolute left-3.5 top-3.5 text-slate-500 text-sm"></i>
-              <input type="text" id="otpCodeInput" maxlength="6" placeholder="123456"
-                class="w-full pl-10 pr-4 py-3 bg-slate-950 border border-slate-700/80 rounded-xl text-slate-100 placeholder-slate-500 text-base tracking-widest text-center font-mono font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-                onkeydown="if(event.key === 'Enter') handleVerifyOtp()">
-            </div>
-            <p class="text-[11px] text-slate-400 mt-2 text-center">
-              Code sent to <span id="otpTargetEmail" class="text-indigo-300 font-semibold"></span>
-            </p>
-          </div>
-
-          <button type="button" id="btnVerifyOtp" onclick="handleVerifyOtp()"
-            class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold rounded-xl text-xs sm:text-sm transition-all shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 cursor-pointer">
-            <i class="fas fa-check text-xs"></i>
-            <span id="btnVerifyOtpText">Verify & Access Ledger</span>
-          </button>
+        <div id="passcodeError" class="text-xs text-rose-400 font-semibold hidden flex items-center justify-center gap-1.5 pt-1">
+          <i class="fas fa-circle-exclamation"></i>
+          <span>Incorrect passcode. Please try again.</span>
         </div>
       </div>
 
-      <!-- MODE B: EMAIL & PASSWORD / PIN -->
-      <div id="authPasswordContainer" class="space-y-4 hidden">
-        <div>
-          <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Email Address</label>
-          <div class="relative">
-            <i class="fas fa-envelope absolute left-3.5 top-3.5 text-slate-500 text-sm"></i>
-            <input type="email" id="pwdEmailInput" placeholder="name@domain.com"
-              class="w-full pl-10 pr-4 py-3 bg-slate-950 border border-slate-700/80 rounded-xl text-slate-100 placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Password or 6-Digit PIN</label>
-          <div class="relative">
-            <i class="fas fa-lock absolute left-3.5 top-3.5 text-slate-500 text-sm"></i>
-            <input type="password" id="pwdInput" placeholder="Min. 6 characters or digits"
-              class="w-full pl-10 pr-4 py-3 bg-slate-950 border border-slate-700/80 rounded-xl text-slate-100 placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-              onkeydown="if(event.key === 'Enter') handlePasswordAuth('signin')">
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-2 pt-1">
-          <button type="button" id="btnSignInPwd" onclick="handlePasswordAuth('signin')"
-            class="py-3 px-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs transition-all shadow-md shadow-indigo-600/30 flex items-center justify-center gap-1.5 cursor-pointer">
-            <i class="fas fa-right-to-bracket text-xs"></i>
-            <span>Sign In</span>
-          </button>
-          <button type="button" id="btnSignUpPwd" onclick="handlePasswordAuth('signup')"
-            class="py-3 px-3 bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700 font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer">
-            <i class="fas fa-user-plus text-xs text-indigo-400"></i>
-            <span>Create Account</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Auth Error / Notification Alert Box -->
-      <div id="authAlert" class="mt-4 text-xs text-rose-300 bg-rose-950/60 border border-rose-800 rounded-xl p-3 hidden flex items-start gap-2.5">
-        <i class="fas fa-circle-exclamation text-rose-400 mt-0.5 text-sm flex-shrink-0"></i>
-        <div id="authAlertMsg" class="flex-1 leading-relaxed"></div>
-      </div>
-
-      <!-- Footer Security Note -->
-      <div class="mt-6 pt-4 border-t border-slate-800 text-[11px] text-slate-500 text-center flex items-center justify-center gap-1.5">
-        <i class="fas fa-shield-cat text-indigo-400"></i>
-        <span>Encrypted cross-device cloud sync via Supabase</span>
+      <div class="mt-6 pt-4 border-t border-slate-800 text-[11px] text-slate-500 flex items-center justify-center gap-1.5">
+        <i class="fas fa-cloud text-indigo-400"></i>
+        <span>Synced across all your devices in real-time</span>
       </div>
     </div>
   </div>
@@ -191,7 +116,7 @@
     <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-30">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
         
-        <!-- Left: Brand -->
+        <!-- Brand -->
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 bg-gradient-to-tr from-indigo-600 to-indigo-500 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-600/30 text-white font-bold flex-shrink-0">
             WN
@@ -199,44 +124,38 @@
           <div>
             <div class="flex items-center gap-2">
               <h1 class="text-sm sm:text-base font-bold text-white tracking-tight">WN Money Tracker</h1>
-              <span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-950/80 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-800/60 hidden sm:inline-block">Cloud Live</span>
+              <span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-950/80 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-800/60 hidden sm:inline-block">Cloud Synced</span>
             </div>
-            <p class="text-[11px] text-slate-400 hidden sm:block">Automated Personal Bookkeeping & Analytics</p>
+            <p class="text-[11px] text-slate-400 hidden sm:block">Personal Cross-Device Bookkeeping & Analytics</p>
           </div>
         </div>
 
-        <!-- Right: Email & Actions -->
+        <!-- Header Actions -->
         <div class="flex items-center gap-2 sm:gap-3">
-          <!-- Active Email Badge -->
-          <div class="flex items-center gap-2 px-3 py-1.5 bg-slate-800/80 border border-slate-700 rounded-xl text-xs text-slate-300">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span id="userEmailBadge" class="truncate max-w-[120px] sm:max-w-[200px] font-semibold text-slate-200">user@email.com</span>
-          </div>
-
-          <!-- Refresh Sync Button -->
-          <button onclick="loadCloudData(true)" title="Sync latest data"
-            class="h-9 px-2.5 bg-slate-800 hover:bg-slate-750 text-slate-300 border border-slate-700 rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer">
+          <!-- Live Cloud Sync Refresh Button -->
+          <button onclick="loadCloudData(true)" title="Sync latest data from cloud"
+            class="h-9 px-3 bg-slate-800 hover:bg-slate-750 text-slate-300 border border-slate-700 rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer">
             <i id="syncIcon" class="fas fa-arrows-rotate text-indigo-400"></i>
-            <span class="hidden md:inline">Sync</span>
+            <span class="hidden md:inline font-semibold">Sync</span>
           </button>
 
-          <!-- Add Entry Button (Header Desktop) -->
+          <!-- Add Transaction (Desktop) -->
           <button onclick="openTransactionModal()" class="hidden sm:inline-flex h-9 px-3.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold items-center gap-1.5 shadow-md shadow-indigo-600/30 transition-all cursor-pointer">
             <i class="fas fa-plus"></i>
             <span>Add Entry</span>
           </button>
 
-          <!-- Categories Button -->
+          <!-- Manage Categories -->
           <button onclick="openCategoryModal()" class="h-9 px-3 bg-slate-800 hover:bg-slate-750 text-slate-300 border border-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer">
             <i class="fas fa-tags text-indigo-400"></i>
             <span class="hidden md:inline">Categories</span>
           </button>
 
-          <!-- Sign Out -->
-          <button onclick="handleSignOut()" title="Sign out"
-            class="h-9 px-2.5 sm:px-3 bg-slate-800 hover:bg-rose-950/60 hover:text-rose-300 hover:border-rose-800/80 text-slate-400 border border-slate-700 rounded-xl text-xs flex items-center gap-1.5 transition-colors cursor-pointer">
-            <i class="fas fa-right-from-bracket"></i>
-            <span class="hidden sm:inline">Sign Out</span>
+          <!-- Lock Button -->
+          <button onclick="lockWebsite()" title="Lock website"
+            class="h-9 px-3 bg-slate-800 hover:bg-rose-950/60 hover:text-rose-300 hover:border-rose-800/80 text-slate-400 border border-slate-700 rounded-xl text-xs flex items-center gap-1.5 transition-colors cursor-pointer">
+            <i class="fas fa-lock text-xs"></i>
+            <span class="hidden sm:inline">Lock</span>
           </button>
         </div>
       </div>
@@ -245,20 +164,20 @@
     <!-- Main Content Area -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full space-y-6 flex-grow pb-24 sm:pb-12">
 
-      <!-- Table Setup Notice (Shows if database tables haven't been created yet) -->
+      <!-- Table Setup Notice (Appears only if SQL tables aren't created yet) -->
       <div id="dbSetupAlert" class="hidden bg-amber-950/40 border border-amber-800/80 p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-200">
         <div class="flex items-center gap-3">
           <i class="fas fa-triangle-exclamation text-amber-400 text-base"></i>
           <div>
-            <strong>Database tables not initialized:</strong> Run the Supabase SQL setup query so your entries can save to the cloud.
+            <strong>Cloud database configuration needed:</strong> Click the button to copy the 1-click SQL setup script and run it in your Supabase SQL Editor.
           </div>
         </div>
-        <button onclick="copySqlSetupCode()" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold rounded-xl transition text-xs flex items-center gap-1.5 flex-shrink-0 cursor-pointer">
+        <button onclick="copySqlSetupCode()" class="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold rounded-xl transition text-xs flex items-center gap-1.5 flex-shrink-0 cursor-pointer">
           <i class="fas fa-copy"></i>
-          <span>Copy SQL Query</span>
+          <span>Copy Setup SQL</span>
         </button>
       </div>
-      
+
       <!-- Peak Spending Callout Banner -->
       <div id="peakSpendingBanner" class="hidden bg-gradient-to-r from-rose-950/40 via-amber-950/20 to-slate-900 border border-rose-900/50 p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
         <div class="flex items-center gap-3">
@@ -267,7 +186,7 @@
           </div>
           <div>
             <h3 class="text-xs font-bold uppercase tracking-wider text-rose-400">Peak Spending Insight</h3>
-            <p id="peakSpendingText" class="text-xs sm:text-sm text-slate-300 font-normal mt-0.5">Analyzing your spending timeline...</p>
+            <p id="peakSpendingText" class="text-xs sm:text-sm text-slate-300 font-normal mt-0.5">Analyzing spending timeline...</p>
           </div>
         </div>
         <div class="flex items-center gap-2 self-end sm:self-center">
@@ -275,7 +194,7 @@
         </div>
       </div>
 
-      <!-- KPI Summary Cards -->
+      <!-- Summary KPI Cards -->
       <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
         <!-- Income -->
         <div class="bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-800/90 shadow-sm">
@@ -308,7 +227,7 @@
         <!-- Net Profit -->
         <div class="bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-800/90 shadow-sm">
           <div class="flex items-center justify-between">
-            <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">Net Profit</span>
+            <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">Net Balance</span>
             <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-indigo-950 text-indigo-400 border border-indigo-800/60 flex items-center justify-center text-xs">
               <i class="fas fa-scale-balanced"></i>
             </span>
@@ -319,7 +238,7 @@
           </div>
         </div>
 
-        <!-- Savings Margin -->
+        <!-- Margin -->
         <div class="bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-800/90 shadow-sm">
           <div class="flex items-center justify-between">
             <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">Margin</span>
@@ -336,9 +255,9 @@
         </div>
       </section>
 
-      <!-- Analytics Visualizations -->
+      <!-- Charts Grid -->
       <section class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <!-- Cash Flow Trends Line Chart -->
+        <!-- Timeline Line Chart -->
         <div class="lg:col-span-2 bg-slate-900 rounded-2xl p-4 sm:p-6 border border-slate-800/90 shadow-sm flex flex-col justify-between">
           <div class="flex items-center justify-between mb-3">
             <div>
@@ -355,7 +274,7 @@
           </div>
         </div>
 
-        <!-- Expense Category Breakdown Doughnut -->
+        <!-- Doughnut Category Chart -->
         <div class="bg-slate-900 rounded-2xl p-4 sm:p-6 border border-slate-800/90 shadow-sm flex flex-col">
           <div class="flex items-center justify-between mb-3">
             <div>
@@ -371,25 +290,25 @@
         </div>
       </section>
 
-      <!-- Ledger / Transaction Section -->
+      <!-- Ledger Section -->
       <section class="bg-slate-900 rounded-2xl border border-slate-800/90 shadow-sm overflow-hidden">
         
         <!-- Filter Toolbar -->
         <div class="p-4 sm:p-5 border-b border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
             <h3 class="text-sm sm:text-base font-bold text-white">Financial Ledger</h3>
-            <p class="text-xs text-slate-400">All synced cloud transactions with receipt audit records</p>
+            <p class="text-xs text-slate-400">Shared cloud entries synced across devices</p>
           </div>
 
           <div class="flex flex-wrap items-center gap-2">
-            <!-- Search Input -->
+            <!-- Search -->
             <div class="relative flex-grow sm:flex-grow-0 w-full sm:w-48">
               <i class="fas fa-search absolute left-3 top-2.5 text-xs text-slate-500"></i>
               <input type="text" id="ledgerSearchInput" oninput="renderLedger()" placeholder="Search entries..." 
                 class="w-full text-xs pl-8 pr-3 py-2 bg-slate-800 border border-slate-700 text-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none placeholder-slate-500">
             </div>
 
-            <!-- Time Filter Dropdown -->
+            <!-- Time Filter -->
             <div class="relative">
               <select id="timeFilter" onchange="renderDashboard()" class="text-xs bg-slate-800 border border-slate-700 text-slate-200 rounded-xl py-2 px-3 pr-8 focus:ring-2 focus:ring-indigo-500 focus:outline-none cursor-pointer">
                 <option value="this_month" selected>This Month</option>
@@ -398,7 +317,7 @@
               </select>
             </div>
 
-            <!-- Export to CSV -->
+            <!-- CSV Export -->
             <button onclick="exportToCSV()" class="h-8 sm:h-9 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition border border-slate-700 cursor-pointer" title="Export Ledger to CSV">
               <i class="fas fa-file-csv text-slate-400"></i>
               <span class="hidden sm:inline">Export</span>
@@ -406,10 +325,10 @@
           </div>
         </div>
 
-        <!-- 1. MOBILE CARD VIEW (< 768px) -->
+        <!-- Mobile Card View (< 768px) -->
         <div id="mobileLedgerList" class="block md:hidden divide-y divide-slate-800 p-2"></div>
 
-        <!-- 2. DESKTOP DATA TABLE (>= 768px) -->
+        <!-- Desktop Table View (>= 768px) -->
         <div class="hidden md:block overflow-x-auto">
           <table class="w-full text-left text-xs text-slate-300">
             <thead class="bg-slate-800/50 text-slate-400 uppercase font-semibold text-[11px] border-b border-slate-800">
@@ -426,7 +345,7 @@
           </table>
         </div>
 
-        <!-- Empty State Fallback -->
+        <!-- Empty State -->
         <div id="emptyLedgerView" class="hidden py-14 flex-col items-center justify-center text-center px-4">
           <div class="w-12 h-12 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-500 mb-3">
             <i class="fas fa-receipt text-xl"></i>
@@ -438,7 +357,7 @@
           </button>
         </div>
 
-        <!-- Ledger Footer -->
+        <!-- Table Footer -->
         <div class="px-5 py-3 bg-slate-800/30 border-t border-slate-800 text-xs text-slate-400 flex items-center justify-between">
           <span id="ledgerCountIndicator">Showing 0 records</span>
           <span class="text-[11px] text-slate-500 flex items-center gap-1.5">
@@ -456,7 +375,7 @@
         <span class="text-[10px] font-medium mt-0.5">Categories</span>
       </button>
 
-      <!-- Primary Centered Add Action -->
+      <!-- Center Floating Action Button -->
       <button onclick="openTransactionModal()" class="w-13 h-13 -mt-6 bg-gradient-to-tr from-indigo-600 to-indigo-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-indigo-600/50 active:scale-95 transition-transform min-w-[48px] min-h-[48px]">
         <i class="fas fa-plus text-lg"></i>
       </button>
@@ -477,7 +396,7 @@
   <div id="txModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="mobile-sheet bg-slate-900 border border-slate-800 w-full sm:max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
       
-      <!-- Modal Header -->
+      <!-- Header -->
       <div class="px-5 py-4 bg-slate-950 text-white flex items-center justify-between border-b border-slate-800 flex-shrink-0">
         <div class="flex items-center gap-2">
           <span class="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-xs">
@@ -608,7 +527,7 @@
           </div>
         </div>
 
-        <!-- List Active Categories -->
+        <!-- List Categories -->
         <div>
           <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Active Categories</h4>
           <div id="categoryItemsContainer" class="space-y-2 max-h-56 overflow-y-auto pr-1"></div>
@@ -623,32 +542,28 @@
     </div>
   </div>
 
-  <!-- In-App Notification Toast -->
+  <!-- Toast Notification -->
   <div id="toast" class="fixed top-5 right-5 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-2xl border text-xs sm:text-sm font-semibold transition-all transform duration-300 translate-y-[-20px] opacity-0 pointer-events-none">
     <i id="toastIcon" class="fas fa-info-circle text-base"></i>
     <span id="toastMessage">Notification</span>
   </div>
 
-  <!-- ================= 5. COMPLETE APPLICATION JAVASCRIPT ================= -->
+  <!-- ================= 5. JAVASCRIPT LOGIC ================= -->
   <script>
-    // --- SUPABASE CLIENT CONFIGURATION ---
+    // Master Website Passcode
+    const MASTER_PASSCODE = "888888";
+
+    // Supabase Credentials
     const SUPABASE_URL = "https://yqknrymyggfzztcrnmiu.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlxa25yeW15Z2dmenp0Y3JubWl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0Njk5MjQsImV4cCI6MjEwNzA0NTkyNH0.bi10_LrEwnnyNJUCWh7R6oj9rOzmksdaD1cYBQpzdXI";
 
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true
-      }
-    });
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // Global State
-    let currentUser = null;
     let transactions = [];
     let categories = [];
     let trendChart = null;
     let categoryChart = null;
-    let activeAuthMode = 'otp'; // 'otp' or 'password'
 
     const defaultCategories = [
       { id: 'def-1', name: 'Housing & Utilities', type: 'expense', color: '#6366f1' },
@@ -667,252 +582,62 @@
     });
 
     // --- APPLICATION STARTUP ---
-    window.addEventListener('DOMContentLoaded', async () => {
+    window.addEventListener('DOMContentLoaded', () => {
       document.getElementById('entryDate').value = new Date().toISOString().split('T')[0];
 
-      // Check for active login session
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (session && session.user) {
-          handleAuthSuccess(session.user);
-        } else {
-          showAuthOverlay();
-        }
-      } catch (err) {
-        console.error("Session verification note:", err);
-        showAuthOverlay();
+      // Check if device is already unlocked
+      if (localStorage.getItem('wn_tracker_unlocked') === 'true') {
+        unlockDashboard();
+      } else {
+        document.getElementById('passcodeOverlay').classList.remove('hidden');
+        document.getElementById('passcodeInput').focus();
       }
     });
 
-    function showAuthOverlay() {
-      document.getElementById('authOverlay').classList.remove('hidden');
-      document.getElementById('appContainer').classList.add('hidden');
+    // --- PASSCODE UNLOCK FLOW ---
+    function handleUnlock() {
+      const input = document.getElementById('passcodeInput');
+      const errorBox = document.getElementById('passcodeError');
+      const lockCard = document.getElementById('lockCard');
+
+      if (input.value === MASTER_PASSCODE) {
+        localStorage.setItem('wn_tracker_unlocked', 'true');
+        errorBox.classList.add('hidden');
+        unlockDashboard();
+      } else {
+        errorBox.classList.remove('hidden');
+        lockCard.classList.add('shake-anim');
+        setTimeout(() => lockCard.classList.remove('shake-anim'), 450);
+        input.value = '';
+        input.focus();
+      }
     }
 
-    function handleAuthSuccess(user) {
-      currentUser = user;
-      document.getElementById('authOverlay').classList.add('hidden');
+    function unlockDashboard() {
+      document.getElementById('passcodeOverlay').classList.add('hidden');
       document.getElementById('appContainer').classList.remove('hidden');
-      document.getElementById('userEmailBadge').textContent = user.email || 'Authenticated';
       loadCloudData();
     }
 
-    // --- AUTH TAB SWITCHING ---
-    function switchAuthTab(mode) {
-      activeAuthMode = mode;
-      clearAuthAlert();
-
-      const tabOtp = document.getElementById('tabOtpBtn');
-      const tabPwd = document.getElementById('tabPasswordBtn');
-      const otpContainer = document.getElementById('authOtpContainer');
-      const pwdContainer = document.getElementById('authPasswordContainer');
-
-      if (mode === 'otp') {
-        tabOtp.className = 'flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 bg-indigo-600 text-white shadow-sm cursor-pointer';
-        tabPwd.className = 'flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 text-slate-400 hover:text-white cursor-pointer';
-        otpContainer.classList.remove('hidden');
-        pwdContainer.classList.add('hidden');
-      } else {
-        tabPwd.className = 'flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 bg-indigo-600 text-white shadow-sm cursor-pointer';
-        tabOtp.className = 'flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 text-slate-400 hover:text-white cursor-pointer';
-        pwdContainer.classList.remove('hidden');
-        otpContainer.classList.add('hidden');
-
-        // Pre-fill email if already typed in OTP tab
-        const existingEmail = document.getElementById('otpEmailInput').value.trim();
-        if (existingEmail && !document.getElementById('pwdEmailInput').value) {
-          document.getElementById('pwdEmailInput').value = existingEmail;
-        }
-      }
-    }
-
-    function showAuthAlert(message, isRateLimit = false) {
-      const alertBox = document.getElementById('authAlert');
-      const alertMsg = document.getElementById('authAlertMsg');
-      
-      let html = `<span>${message}</span>`;
-      if (isRateLimit) {
-        html += `<div class="mt-2 pt-2 border-t border-rose-800/80">
-          <strong class="text-white">Tip:</strong> Supabase free email rate limit reached. 
-          <button type="button" onclick="switchAuthTab('password')" class="text-indigo-300 font-bold underline hover:text-white ml-1">
-            Click here to use Password / PIN sign-in instead
-          </button>
-        </div>`;
-      }
-      
-      alertMsg.innerHTML = html;
-      alertBox.classList.remove('hidden');
-    }
-
-    function clearAuthAlert() {
-      document.getElementById('authAlert').classList.add('hidden');
-      document.getElementById('authAlertMsg').innerHTML = '';
-    }
-
-    // --- OTP FLOW ---
-    async function handleSendOtp() {
-      clearAuthAlert();
-      const email = document.getElementById('otpEmailInput').value.trim();
-      const btn = document.getElementById('btnSendOtp');
-      const btnText = document.getElementById('btnSendOtpText');
-
-      if (!email || !email.includes('@')) {
-        showAuthAlert("Please enter a valid email address.");
-        return;
-      }
-
-      btn.disabled = true;
-      btnText.textContent = "Sending code...";
-
-      try {
-        const { error } = await supabase.auth.signInWithOtp({
-          email: email,
-          options: {
-            shouldCreateUser: true
-          }
-        });
-
-        if (error) {
-          const isRateLimit = error.message.toLowerCase().includes('rate limit') || error.status === 429;
-          showAuthAlert(error.message, isRateLimit);
-          return;
-        }
-
-        document.getElementById('otpTargetEmail').textContent = email;
-        document.getElementById('otpStep1').classList.add('hidden');
-        document.getElementById('otpStep2').classList.remove('hidden');
-        document.getElementById('otpCodeInput').focus();
-        showToast("6-digit code dispatched to your email!", "success");
-
-      } catch (err) {
-        showAuthAlert(err.message || "Failed to send code. Please try again.");
-      } finally {
-        btn.disabled = false;
-        btnText.textContent = "Send 6-Digit Code";
-      }
-    }
-
-    function backToOtpStep1() {
-      clearAuthAlert();
-      document.getElementById('otpStep2').classList.add('hidden');
-      document.getElementById('otpStep1').classList.remove('hidden');
-    }
-
-    async function handleVerifyOtp() {
-      clearAuthAlert();
-      const email = document.getElementById('otpEmailInput').value.trim();
-      const token = document.getElementById('otpCodeInput').value.trim();
-      const btn = document.getElementById('btnVerifyOtp');
-      const btnText = document.getElementById('btnVerifyOtpText');
-
-      if (!token || token.length < 6) {
-        showAuthAlert("Please enter the complete 6-digit code.");
-        return;
-      }
-
-      btn.disabled = true;
-      btnText.textContent = "Verifying...";
-
-      try {
-        const { data, error } = await supabase.auth.verifyOtp({
-          email: email,
-          token: token,
-          type: 'email'
-        });
-
-        if (error) throw error;
-
-        if (data && data.session && data.session.user) {
-          handleAuthSuccess(data.session.user);
-          showToast("Cloud ledger synchronized!", "success");
-        } else {
-          throw new Error("Unable to establish user session.");
-        }
-
-      } catch (err) {
-        showAuthAlert(err.message || "Invalid or expired code. Please try again.");
-      } finally {
-        btn.disabled = false;
-        btnText.textContent = "Verify & Access Ledger";
-      }
-    }
-
-    // --- PASSWORD / PIN FLOW ---
-    async function handlePasswordAuth(type) {
-      clearAuthAlert();
-      const email = document.getElementById('pwdEmailInput').value.trim();
-      const password = document.getElementById('pwdInput').value.trim();
-      const btnSignIn = document.getElementById('btnSignInPwd');
-      const btnSignUp = document.getElementById('btnSignUpPwd');
-
-      if (!email || !email.includes('@')) {
-        showAuthAlert("Please enter a valid email address.");
-        return;
-      }
-      if (!password || password.length < 6) {
-        showAuthAlert("Password / PIN must be at least 6 characters.");
-        return;
-      }
-
-      btnSignIn.disabled = true;
-      btnSignUp.disabled = true;
-
-      try {
-        if (type === 'signin') {
-          // Attempt Login
-          const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password
-          });
-
-          if (error) {
-            if (error.message.toLowerCase().includes('invalid login credentials')) {
-              showAuthAlert("Invalid login credentials. If you haven't created your password yet, click 'Create Account'.");
-            } else {
-              showAuthAlert(error.message);
-            }
-            return;
-          }
-
-          if (data && data.session && data.session.user) {
-            handleAuthSuccess(data.session.user);
-            showToast("Welcome back! Signed in successfully.", "success");
-          }
-
-        } else {
-          // Attempt Sign Up
-          const { data, error } = await supabase.auth.signUp({
-            email,
-            password
-          });
-
-          if (error) throw error;
-
-          if (data && data.session && data.session.user) {
-            handleAuthSuccess(data.session.user);
-            showToast("Account created and signed in!", "success");
-          } else if (data && data.user && (!data.session)) {
-            showToast("Account created! Check your email to confirm, or sign in now.", "info");
-          }
-        }
-      } catch (err) {
-        showAuthAlert(err.message || "Authentication failed.");
-      } finally {
-        btnSignIn.disabled = false;
-        btnSignUp.disabled = false;
-      }
-    }
-
-    async function handleSignOut() {
-      if (!confirm("Are you sure you want to sign out?")) return;
-      await supabase.auth.signOut();
+    function lockWebsite() {
+      localStorage.removeItem('wn_tracker_unlocked');
       window.location.reload();
     }
 
-    // --- CLOUD DATA FETCHING ---
-    async function loadCloudData(showSyncToast = false) {
-      if (!currentUser) return;
+    function togglePasscodeVisibility() {
+      const input = document.getElementById('passcodeInput');
+      const icon = document.getElementById('eyeIcon');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'fas fa-eye-slash text-sm';
+      } else {
+        input.type = 'password';
+        icon.className = 'fas fa-eye text-sm';
+      }
+    }
 
+    // --- CLOUD DATA FETCHING (SUPABASE) ---
+    async function loadCloudData(showSyncToast = false) {
       const syncIcon = document.getElementById('syncIcon');
       if (syncIcon) syncIcon.classList.add('fa-spin');
 
@@ -927,7 +652,7 @@
 
         if (catErr) {
           if (catErr.message.includes('relation') || catErr.code === '42P01') tableMissing = true;
-          console.warn("Categories query note:", catErr.message);
+          console.warn("Categories fetch warning:", catErr.message);
         }
 
         categories = [...defaultCategories, ...(dbCategories || [])];
@@ -940,7 +665,7 @@
 
         if (txErr) {
           if (txErr.message.includes('relation') || txErr.code === '42P01') tableMissing = true;
-          console.warn("Transactions query note:", txErr.message);
+          console.warn("Transactions fetch warning:", txErr.message);
         }
 
         transactions = dbTransactions || [];
@@ -953,7 +678,7 @@
         if (syncIcon) syncIcon.classList.remove('fa-spin');
       }
 
-      // Toggle database setup alert if tables are missing
+      // Check DB alert banner
       const dbAlert = document.getElementById('dbSetupAlert');
       if (tableMissing) {
         dbAlert.classList.remove('hidden');
@@ -965,7 +690,7 @@
       renderCategoryModalItems();
       renderDashboard();
 
-      if (showSyncToast) showToast("Synced with cloud ledger!", "success");
+      if (showSyncToast) showToast("Synced latest ledger from cloud!", "success");
     }
 
     // --- SAVE TRANSACTION TO CLOUD ---
@@ -991,7 +716,6 @@
         const { data, error } = await supabase
           .from('transactions')
           .insert([{
-            user_id: currentUser.id,
             date,
             type,
             category,
@@ -1016,10 +740,11 @@
         document.getElementById('entryReceiptUrl').value = '';
         document.getElementById('entryDate').value = new Date().toISOString().split('T')[0];
 
-        showToast("Transaction synced to cloud!", "success");
+        showToast("Entry saved & synced across devices!", "success");
       } catch (err) {
         console.error("Save error:", err);
         showToast("Failed to save: " + err.message, "error");
+        document.getElementById('dbSetupAlert').classList.remove('hidden');
       } finally {
         btn.disabled = false;
         btnText.textContent = "Save to Cloud";
@@ -1060,7 +785,6 @@
         const { data, error } = await supabase
           .from('categories')
           .insert([{
-            user_id: currentUser.id,
             name,
             type,
             color
@@ -1460,7 +1184,7 @@
         }
       });
 
-      // 2. Category Breakdown Doughnut
+      // 2. Category Doughnut Chart
       const catSums = {};
       entries.filter(t => t.type === 'expense').forEach(e => {
         catSums[e.category] = (catSums[e.category] || 0) + Number(e.amount);
@@ -1554,12 +1278,11 @@
       showToast("CSV ledger exported successfully!", "success");
     }
 
-    // Copy SQL setup query helper
+    // 1-Click SQL Setup Helper
     function copySqlSetupCode() {
-      const sql = `-- 1. Create Transactions table
+      const sql = `-- Run this in Supabase SQL Editor:
 create table if not exists public.transactions (
   id uuid default gen_random_uuid() primary key,
-  user_id uuid references auth.users(id) on delete cascade not null,
   date date not null,
   type text not null check (type in ('income', 'expense')),
   category text not null,
@@ -1569,28 +1292,26 @@ create table if not exists public.transactions (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- 2. Create Custom Categories table
 create table if not exists public.categories (
   id uuid default gen_random_uuid() primary key,
-  user_id uuid references auth.users(id) on delete cascade not null,
   name text not null,
   type text not null check (type in ('income', 'expense')),
   color text default '#64748b',
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- 3. Enable RLS
-alter table public.transactions enable row level security;
-alter table public.categories enable row level security;
+-- Remove user_id constraints if tables were created previously
+alter table public.transactions drop column if exists user_id cascade;
+alter table public.categories drop column if exists user_id cascade;
 
--- 4. Policies
-create policy "Users own transactions" on public.transactions for all using (auth.uid() = user_id);
-create policy "Users own categories" on public.categories for all using (auth.uid() = user_id);`;
+-- Disable Row Level Security so your passcode site syncs directly
+alter table public.transactions disable row level security;
+alter table public.categories disable row level security;`;
 
       navigator.clipboard.writeText(sql).then(() => {
-        showToast("SQL script copied! Paste it into Supabase SQL Editor.", "success");
+        showToast("SQL script copied! Paste it into Supabase SQL Editor and click Run.", "success");
       }).catch(() => {
-        prompt("Copy SQL script manually:", sql);
+        prompt("Copy SQL setup script manually:", sql);
       });
     }
 
