@@ -558,6 +558,7 @@
     const SUPABASE_URL = "https://yqknrymyggfzztcrnmiu.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlxa25yeW15Z2dmenp0Y3JubWl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0Njk5MjQsImV4cCI6MjEwNzA0NTkyNH0.bi10_LrEwnnyNJUCWh7R6oj9rOzmksdaD1cYBQpzdXI";
     const MASTER_PASSCODE = "888888";
+    const GLOBAL_GEMINI_API_KEY = "AQ.Ab8RN6K95FtSw2UxeJbT5y-9f4gtwlUyLQt60dJPcQTh7W3VOg"; // Hardcoded universal API Key
 
     // Application State
     let transactions = [];
@@ -585,9 +586,13 @@
     window.addEventListener('DOMContentLoaded', () => {
       document.getElementById('entryDate').value = new Date().toISOString().split('T')[0];
 
-      // Load AI Key if exists
-      const savedKey = localStorage.getItem('wn_gemini_key');
-      if (savedKey) document.getElementById('geminiApiKeyInput').value = savedKey;
+      // Load AI Key if exists globally or locally
+      if (GLOBAL_GEMINI_API_KEY) {
+        document.getElementById('geminiApiKeyInput').value = GLOBAL_GEMINI_API_KEY;
+      } else {
+        const savedKey = localStorage.getItem('wn_gemini_key');
+        if (savedKey) document.getElementById('geminiApiKeyInput').value = savedKey;
+      }
 
       if (sessionStorage.getItem('wn_unlocked') === 'true') {
         unlockDashboard();
@@ -733,8 +738,8 @@
 
           console.log("PDF Extraction Complete. Raw text generated length:", fullText.length);
           
-          // Check for Gemini API key
-          const geminiKey = localStorage.getItem('wn_gemini_key');
+          // Check for Gemini API key (Prioritizes global key across all devices)
+          const geminiKey = GLOBAL_GEMINI_API_KEY || localStorage.getItem('wn_gemini_key');
           if (geminiKey) {
             console.log("Gemini Key found. Offloading extraction to AI...");
             spinnerText.innerHTML = `<span class="text-amber-400">Gemini AI analyzing receipt details...</span>`;
